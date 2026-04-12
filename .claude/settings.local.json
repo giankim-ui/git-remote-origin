@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.sec.gov)",
+      "WebSearch",
+      "WebFetch(domain:www.roic.ai)",
+      "WebFetch(domain:investors.palantir.com)",
+      "WebFetch(domain:www.fool.com)",
+      "WebFetch(domain:stockanalysis.com)",
+      "WebFetch(domain:www.macrotrends.net)",
+      "WebFetch(domain:stockdividendscreener.com)",
+      "WebFetch(domain:fiscal.ai)",
+      "WebFetch(domain:www.visualcapitalist.com)",
+      "WebFetch(domain:www.stock-analysis-on.net)",
+      "Bash(npm install:*)",
+      "Bash(npx vite:*)",
+      "Bash(find \"c:\\\\Users\\\\nayut\\\\!claudeProject\" -name \".claude\" -type d -exec ls -la {} \\\\;)",
+      "Bash(find \"c:\\\\Users\\\\nayut\\\\!claudeProject\" -name \"*.jsx\" -type f -exec wc -l {} \\\\;)",
+      "Bash(node -e 'try{JSON.parse\\(require\\('\\\\''fs'\\\\''\\).readFileSync\\('\\\\''__TRACKED_VAR__'\\\\'','\\\\''utf8'\\\\''\\)\\);console.log\\('\\\\''OK: __TRACKED_VAR__'\\\\''\\)}catch\\(e\\){console.log\\('\\\\''ERROR: __TRACKED_VAR__ =>'\\\\'',e.message\\)}')",
+      "Skill(update-config)",
+      "Bash(visual)",
+      "Bash(viz)",
+      "Bash(dash\")",
+      "Bash(cat)",
+      "Read(//tmp/**)"
+    ]
+  },
+  "MAX_OUTPUT_TOKENS": 8000,
+  "MAX_THINKING_TOKENS": 10000,
+  "CLAUDE_CODE_SUBAGENT_MODEL": "haiku"
+}
