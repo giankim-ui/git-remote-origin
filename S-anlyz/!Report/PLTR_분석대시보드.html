@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Palantir (PLTR) 멀티에이전트 종합 분석 대시보드</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+    }
+    
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif; 
+      background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+      color: #e0e0e0; 
+      line-height: 1.6;
+    }
+    
+    .container { 
+      max-width: 1400px; 
+      margin: 0 auto; 
+      padding: 20px; 
+    }
+    
+    /* ─── HEADER ─── */
+    .header { 
+      background: linear-gradient(135deg, #1a2a3a 0%, #0d1b2a 100%);
+      border: 1px solid #003d7a;
+      border-radius: 12px; 
+      padding: 32px; 
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(33, 150, 243, 0.1);
+    }
+    
+    .header-top {
+      display: flex; 
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    @media (min-width: 768px) {
+      .header-top {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: start;
+        justify-items: start;
+      }
+    }
+    
+    .header-title { 
+      font-size: 48px; 
+      font-weight: 700; 
+      color: #64b5f6;
+      letter-spacing: -1px;
+      margin-bottom: 8px; 
+    }
+    
+    .header-subtitle { 
+      font-size: 14px; 
+      color: #90caf9; 
+      margin-bottom: 12px;
+    }
+    
+    .header-meta {
+      font-size: 12px;
+      color: #5c9dd0;
+      margin-bottom: 16px;
+    }
+    
+    .badges { 
+      display: flex; 
+      gap: 8px; 
+      flex-wrap: wrap; 
+      margin-bottom: 0;
+    }
+    
+    .badge { 
+      display: inline-block; 
+      padding: 6px 14px; 
+      border-radius: 6px; 
+      font-size: 11px; 
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .badge-blue { 
+      background: rgba(33, 150, 243, 0.2);
+      color: #64b5f6;
+      border: 1px solid #2196f3;
+    }
+    
+    .badge-green { 
+      background: rgba(76, 175, 80, 0.2);
+      color: #81c784;
+      border: 1px solid #4caf50;
+    }
+    
+    .badge-gray { 
+      background: rgba(66, 66, 66, 0.3);
+      color: #aaa;
+      border: 1px solid #555;
+    }
+    
+    .header-price {
+      text-align: right;
+    }
+    
+    .price-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #64b5f6;
+      margin-bottom: 4px;
+    }
+    
+    .price-label {
+      font-size: 11px;
+      color: #666;
+    }
+    
+    /* ─── KPI GRID ─── */
+    .kpi-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
+      gap: 16px; 
+      margin-bottom: 24px; 
+    }
+    
+    .kpi-card { 
+      background: linear-gradient(135deg, #1e2d3d 0%, #0f1c2a 100%);
+      border: 1px solid #003d7a;
+      border-radius: 10px; 
+      padding: 16px; 
+      transition: all 0.3s ease;
+    }
+    
+    .kpi-card:hover {
+      border-color: #2196f3;
+      box-shadow: 0 2px 12px rgba(33, 150, 243, 0.15);
+      transform: translateY(-2px);
+    }
+    
+    .kpi-label { 
+      font-size: 12px; 
+      color: #5c9dd0; 
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    
+    .kpi-value { 
+      font-size: 22px; 
+      font-weight: 700; 
+      color: #64b5f6;
+      margin-bottom: 6px;
+    }
+    
+    .kpi-sub { 
+      font-size: 11px; 
+      color: #4a7ba7;
+    }
+    
+    /* ─── TABS ─── */
+    .tabs { 
+      display: flex; 
+      gap: 8px; 
+      margin-bottom: 16px; 
+      border-bottom: 2px solid #333;
+      overflow-x: auto;
+      padding-bottom: 0;
+    }
+    
+    .tabs::-webkit-scrollbar {
+      height: 4px;
+    }
+    
+    .tabs::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    .tabs::-webkit-scrollbar-thumb {
+      background: #555;
+      border-radius: 2px;
+    }
+    
+    .tab { 
+      padding: 14px 20px; 
+      background: #1a1a1a;
+      border: 2px solid #333;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer; 
+      font-size: 13px; 
+      font-weight: 500;
+      color: #888; 
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+    
+    .tab:hover:not(.active) { 
+      background: #222;
+      border-color: #444;
+      color: #aaa;
+    }
+    
+    .tab.active { 
+      background: linear-gradient(135deg, #003d7a 0%, #002452 100%);
+      color: #64b5f6;
+      border-color: #2196f3;
+    }
+    
+    /* ─── CONTENT ─── */
+    .content { 
+      background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+      border: 1px solid #333;
+      border-radius: 12px; 
+      padding: 28px; 
+      min-height: 600px;
+    }
+    
+    .tab-content {
+      animation: fadeIn 0.3s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .section { 
+      margin-bottom: 32px; 
+    }
+    
+    .section-title { 
+      font-size: 18px; 
+      font-weight: 600; 
+      color: #64b5f6;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #333;
+    }
+    
+    .chart-container { 
+      position: relative; 
+      height: 320px; 
+      margin-bottom: 28px; 
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 16px;
+      border: 1px solid #333;
+    }
+    
+    .chart-row { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
+      gap: 16px; 
+      margin-bottom: 24px; 
+    }
+    
+    .stat-box { 
+      background: linear-gradient(135deg, #1e2d3d 0%, #0f1c2a 100%);
+      border: 1px solid #003d7a;
+      border-radius: 10px; 
+      padding: 20px; 
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    
+    .stat-box:hover {
+      border-color: #2196f3;
+      box-shadow: 0 2px 12px rgba(33, 150, 243, 0.15);
+    }
+    
+    .stat-value { 
+      font-size: 28px; 
+      font-weight: 700; 
+      color: #4caf50;
+      margin-bottom: 8px;
+    }
+    
+    .stat-label { 
+      font-size: 12px; 
+      color: #5c9dd0;
+      line-height: 1.5;
+    }
+    
+    /* ─── RISK ITEMS ─── */
+    .risk-item { 
+      background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+      border-left: 4px solid #ff6b6b;
+      border-radius: 6px;
+      padding: 16px; 
+      margin-bottom: 14px;
+      border-top: 1px solid #333;
+      border-right: 1px solid #333;
+      border-bottom: 1px solid #333;
+    }
+    
+    .risk-item.high {
+      border-left-color: #ff9800;
+    }
+    
+    .risk-item.medium {
+      border-left-color: #ffc107;
+    }
+    
+    .risk-title { 
+      font-size: 13px; 
+      font-weight: 600; 
+      color: #fff; 
+      margin-bottom: 6px;
+    }
+    
+    .risk-desc { 
+      font-size: 12px; 
+      color: #aaa; 
+      line-height: 1.6;
+    }
+    
+    /* ─── TABLE ─── */
+    .table-wrapper { 
+      overflow-x: auto; 
+      margin-bottom: 20px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+    
+    table { 
+      width: 100%; 
+      font-size: 12px; 
+      border-collapse: collapse;
+    }
+    
+    th { 
+      background: linear-gradient(135deg, #0d2a4a 0%, #051a2f 100%);
+      color: #5c9dd0;
+      text-align: left; 
+      padding: 12px; 
+      border-bottom: 2px solid #003d7a;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+    
+    td { 
+      padding: 12px; 
+      border-bottom: 1px solid #333;
+    }
+    
+    tr:hover { 
+      background: linear-gradient(90deg, transparent, rgba(33, 150, 243, 0.05), transparent);
+    }
+    
+    tr:last-child td {
+      border-bottom: none;
+    }
+    
+    /* ─── INSIGHTS ─── */
+    .insight { 
+      background: linear-gradient(135deg, rgba(13, 71, 161, 0.2) 0%, rgba(5, 26, 47, 0.2) 100%);
+      border-left: 4px solid #2196f3;
+      border-radius: 6px;
+      padding: 14px; 
+      margin-bottom: 12px;
+      border-top: 1px solid #003d7a;
+      border-right: 1px solid #333;
+      border-bottom: 1px solid #333;
+      font-size: 12px; 
+      line-height: 1.7; 
+      color: #b3e5fc;
+    }
+    
+    .insight.warning {
+      border-left-color: #ffc107;
+      background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 193, 7, 0.05) 100%);
+      color: #ffe082;
+    }
+    
+    .insight.success {
+      border-left-color: #4caf50;
+      background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%);
+      color: #a5d6a7;
+    }
+    
+    /* ─── FOOTER ─── */
+    .footer { 
+      text-align: center; 
+      font-size: 11px; 
+      color: #555; 
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1px solid #333;
+    }
+    
+    /* ─── UTILITIES ─── */
+    .text-success { color: #81c784; }
+    .text-warning { color: #ffb74d; }
+    .text-danger { color: #e57373; }
+    .text-muted { color: #666; }
+    
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 768px) {
+      .header {
+        padding: 20px;
+      }
+      
+      .header-title {
+        font-size: 32px;
+      }
+      
+      .kpi-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 12px;
+      }
+      
+      .content {
+        padding: 16px;
+      }
+      
+      table {
+        font-size: 11px;
+      }
+      
+      th, td {
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- HEADER SECTION -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="header">
+      <div class="header-top">
+        <div>
+          <div class="header-title">PLTR</div>
+          <div class="header-subtitle">Palantir Technologies Inc.</div>
+          <div class="header-meta">
+            🔬 멀티에이전트 심화 분석 | 분석 기준: 2026년 4월 10일 | 
+            📊 SEC 10-K 5개(FY2018–2024) + 10-Q 7개 + 어닝콜 8회 기반
+          </div>
+          <div class="badges">
+            <span class="badge badge-blue">NASDAQ</span>
+            <span class="badge badge-blue">Enterprise AI</span>
+            <span class="badge badge-green">S&P 500</span>
+            <span class="badge badge-gray">기술</span>
+          </div>
+        </div>
+        <div class="header-price">
+          <div class="price-value">$130.22</div>
+          <div class="price-label">주가 (2026년 4월)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- KPI GRID -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">📈 FY2024 매출</div>
+        <div class="kpi-value">$2.87B</div>
+        <div class="kpi-sub">YoY +28.8% 성장</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">💰 매출총이익률</div>
+        <div class="kpi-value">80.3%</div>
+        <div class="kpi-sub">소프트웨어 고마진</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">📊 조정 영업마진</div>
+        <div class="kpi-value">37.1%</div>
+        <div class="kpi-sub">FY2024 기준</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">💵 자유현금흐름(FCF)</div>
+        <div class="kpi-value">$1.14B</div>
+        <div class="kpi-sub">🎯 첫 $1B 달성</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">🏦 현금+투자</div>
+        <div class="kpi-value">$5.23B</div>
+        <div class="kpi-sub">무부채 실질</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">🎯 Rule of 40</div>
+        <div class="kpi-value">81점</div>
+        <div class="kpi-sub">Q4 2024 업계 최고</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB NAVIGATION -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab(0)">📊 재무 트렌드</div>
+      <div class="tab" onclick="switchTab(1)">🎯 세그먼트 분석</div>
+      <div class="tab" onclick="switchTab(2)">🛡️ 해자 & 경영진</div>
+      <div class="tab" onclick="switchTab(3)">⚠️ 리스크 분석</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- CONTENT AREA -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="content">
+      
+      <!-- TAB 0: 재무 트렌드 -->
+      <div id="tab-0" class="tab-content">
+        <div class="section">
+          <div class="section-title">📈 연간 매출 & YoY 성장률 추이</div>
+          <div class="insight success">
+            💡 <strong>해석:</strong> FY2020 직접상장(DLS) 후 연간 매출 성장 CAGR 약 33%. 
+            2023년 17% → 2024년 29%로 성장 재가속 시작. 2025년 56% 성장(예상) 초과 달성.
+          </div>
+          <div class="chart-container">
+            <canvas id="revenueChart" role="img" aria-label="연간 매출과 YoY 성장률">
+              연간 매출: 2018년 $742M부터 2024년 $2,866M까지 지속 상승, 성장률 재가속
+            </canvas>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">📊 마진 트렌드 (GPM / 조정 영업마진 / 순이익마진)</div>
+          <div class="insight">
+            💡 <strong>해석:</strong> 소프트웨어 비즈니스 특성상 매출총이익률 80% 수준 유지. 
+            조정 영업마진은 12%(FY2020) → 37.1%(FY2024)로 확대. GAAP 순이익도 2023년부터 흑자 전환.
+          </div>
+          <div class="chart-container">
+            <canvas id="marginChart" role="img" aria-label="마진률 추이">
+              GPM: 2020년 67.7% → 2024년 80.3%, 조정 영업마진: 2020년 12% → 2024년 37.1%
+            </canvas>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">📋 최근 8분기 실적 상세 (Q1 2023 – Q4 2024)</div>
+          <div class="insight warning">
+            ⚠️ <strong>주목:</strong> Q4 2024에 Rule of 40 점수 81점(마진 45.1% + 성장률 36% YoY)
+            업계 최고 수준. NDR(순 달러 유지율) 139% = 기존 고객에서 자체 매출 증가 중.
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>분기</th><th>매출($M)</th><th>YoY</th>
+                  <th>미국정부</th><th>국제정부</th><th>미국상업</th><th>국제상업</th>
+                  <th>조정마진</th><th>NDR</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Q1 '23</td><td>$525</td><td>+18.0%</td><td>$230</td><td>$59</td><td>$107</td><td>$129</td><td>23.2%</td><td>—</td></tr>
+                <tr><td>Q2 '23</td><td>$533</td><td>+13.1%</td><td>$225</td><td>$76</td><td>$103</td><td>$129</td><td>25.3%</td><td>—</td></tr>
+                <tr><td>Q3 '23</td><td>$558</td><td>+16.8%</td><td>$229</td><td>$78</td><td>$116</td><td>$134</td><td>29.2%</td><td>—</td></tr>
+                <tr><td>Q4 '23</td><td>$608</td><td>+20.1%</td><td>$237</td><td>$88</td><td>$131</td><td>$152</td><td>26.6%</td><td>54%</td></tr>
+                <tr><td>Q1 '24</td><td>$634</td><td>+21.0%</td><td>$257</td><td>$79</td><td>$150</td><td>$149</td><td>35.6%</td><td>111%</td></tr>
+                <tr><td>Q2 '24</td><td>$678</td><td>+27.2%</td><td>$278</td><td>$93</td><td>$159</td><td>$149</td><td>37.5%</td><td>—</td></tr>
+                <tr><td>Q3 '24</td><td>$726</td><td>+30.0%</td><td>$320</td><td>$89</td><td>$179</td><td>$138</td><td>37.9%</td><td>118%</td></tr>
+                <tr style="background: linear-gradient(90deg, transparent, rgba(33, 150, 243, 0.1), transparent);">
+                  <td><strong>Q4 '24</strong></td><td><strong>$828</strong></td><td><strong>+36.0%</strong></td>
+                  <td><strong>$343</strong></td><td><strong>$127</strong></td><td><strong>$214</strong></td><td><strong>$145</strong></td>
+                  <td><strong>45.1%</strong></td><td><strong>139%</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">💡 7년 재무 요약 (FY2018–FY2024)</div>
+          <div class="chart-row">
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0; margin-bottom: 8px;">FY2024 매출</div>
+              <div class="stat-value" style="color: #64b5f6;">$2.87B</div>
+              <div class="stat-label">지속 성장 중</div>
+            </div>
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0; margin-bottom: 8px;">GAAP 순이익</div>
+              <div class="stat-value" style="color: #81c784;">$462M</div>
+              <div class="stat-label">2023년부터 흑자</div>
+            </div>
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0; margin-bottom: 8px;">5년 CAGR</div>
+              <div class="stat-value" style="color: #4caf50;">33.0%</div>
+              <div class="stat-label">IPO 이후</div>
+            </div>
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0; margin-bottom: 8px;">고객 확보</div>
+              <div class="stat-value" style="color: #ffb74d;">714개</div>
+              <div class="stat-label">FY2020: 139개</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">⚠️ SBC(주식기반보상) 희석 리스크</div>
+          <div class="insight warning">
+            주의! FY2024 SBC $692M = 매출의 24.2%. 주식 수 연간 4.67% 증가.
+            SAR(주식승인권) 제도 전환(2024년)으로 절대액 감소 예상되나, 아직 미미.
+          </div>
+          <div class="chart-row">
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0; margin-bottom: 8px;">FY2020</div>
+              <div class="stat-value" style="color: #ffb74d;">113.4%</div>
+              <div class="stat-label">상장 일회성 포함</div>
+            </div>
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0; margin-bottom: 8px;">FY2022</div>
+              <div class="stat-value" style="color: #81c784;">29.6%</div>
+              <div class="stat-label">개선 추세</div>
+            </div>
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0; margin-bottom: 8px;">FY2024</div>
+              <div class="stat-value" style="color: #ff9800;">24.2%</div>
+              <div class="stat-label">⚠️ 증가 전환</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 1: 세그먼트 분석 -->
+      <div id="tab-1" class="tab-content" style="display: none;">
+        <div class="section">
+          <div class="section-title">🎯 정부 vs 상업 매출 믹스 (FY2020–FY2024)</div>
+          <div class="insight">
+            💡 <strong>해석:</strong> 정부 비중이 FY2020 56% → FY2024 55%로 안정화. 
+            상업 세그먼트가 44% → 45%로 확대. 다각화 진행 중.
+          </div>
+          <div class="chart-container">
+            <canvas id="segmentChart" role="img" aria-label="정부 상업 세그먼트 매출 추이">
+              정부: 2020년 $616M → 2024년 $1,570M, 상업: 2020년 $484M → 2024년 $1,296M
+            </canvas>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">📊 FY2024 4-세그먼트 상세 분석</div>
+          <div class="chart-row">
+            <div class="stat-box" style="border-top: 3px solid #2196f3;">
+              <div style="font-size: 11px; color: #2196f3; margin-bottom: 8px;">미국 정부</div>
+              <div class="stat-value" style="color: #2196f3;">$921M</div>
+              <div class="stat-label">🚀 +40% YoY | 32.1%</div>
+            </div>
+            <div class="stat-box" style="border-top: 3px solid #9c27b0;">
+              <div style="font-size: 11px; color: #9c27b0; margin-bottom: 8px;">국제 정부</div>
+              <div class="stat-value" style="color: #9c27b0;">$649M</div>
+              <div class="stat-label">⚠️ +3% YoY | 22.7%</div>
+            </div>
+            <div class="stat-box" style="border-top: 3px solid #4caf50;">
+              <div style="font-size: 11px; color: #4caf50; margin-bottom: 8px;">미국 상업</div>
+              <div class="stat-value" style="color: #4caf50;">$702M</div>
+              <div class="stat-label">🔥 +54% YoY | 24.5%</div>
+            </div>
+            <div class="stat-box" style="border-top: 3px solid #ff9800;">
+              <div style="font-size: 11px; color: #ff9800; margin-bottom: 8px;">국제 상업</div>
+              <div class="stat-value" style="color: #ff9800;">$594M</div>
+              <div class="stat-label">⚠️ +3% YoY | 20.7%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">🔍 세그먼트별 핵심 인사이트</div>
+          <div class="insight success">
+            🟢 <strong>미국 상업(US Comm) 급성장:</strong> +54% YoY는 AIP Bootcamp 효과. 
+            2024년 Q4부터 지속 50%+ 성장. 마진도 65.9%(정부 65.6% 동등).
+          </div>
+          <div class="insight success">
+            🟢 <strong>미국 정부(US Gov) 재가속:</strong> +40% YoY. DoD Maven Smart System, Army 4년 계약 등 대규모 수주. 
+            2023년 계속결의안 지연 극복 완료.
+          </div>
+          <div class="insight warning">
+            🟡 <strong>국제 상업(Intl Comm) 부진:</strong> 2023–2024년 연속 3% 성장. 
+            유럽 채택 지연, 예산 불확실성 지속. SAP, Siemens 같은 로컬 플레이어 경쟁 가속화.
+          </div>
+          <div class="insight warning">
+            🟡 <strong>국제 정부(Intl Gov) 둔화:</strong> +3% YoY. 예산 결의안 지연, 
+            지정학적 불확실성 영향. 지리적 쏠림 악화.
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">👥 상위 20개 고객 평균 매출 추세</div>
+          <div class="insight">
+            💡 <strong>의미:</strong> 상위 20개 고객의 평균 매출이 FY2023 $54.6M → FY2024 $64.6M → FY2025(예) $93.9M.
+            대형 고객들이 지속 확대 중. 그러나 소수 대형 계약 미갱신 시 단기 충격 상당.
+          </div>
+          <div class="chart-row">
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0;">FY2023</div>
+              <div class="stat-value" style="color: #64b5f6;">$54.6M</div>
+              <div class="stat-label">평균 고객 매출</div>
+            </div>
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0;">FY2024</div>
+              <div class="stat-value" style="color: #4caf50;">$64.6M</div>
+              <div class="stat-label">+18.3% 증가</div>
+            </div>
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0;">FY2025(예)</div>
+              <div class="stat-value" style="color: #ff9800;">$93.9M</div>
+              <div class="stat-label">+45.3% 예상</div>
+            </div>
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0;">고객 수</div>
+              <div class="stat-value" style="color: #81c784;">714개</div>
+              <div class="stat-label">FY2020: 139개</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: 해자 & 경영진 -->
+      <div id="tab-2" class="tab-content" style="display: none;">
+        <div class="section">
+          <div class="section-title">🛡️ 경제적 해자 분석 (Narrow-to-Wide Moat)</div>
+          <div class="insight">
+            💡 <strong>최종 평가:</strong> Morningstar 공식 평가 "Narrow Moat". 
+            단, 전환 비용 + 정부 보안 허가 네트워크 기반으로 Narrow-to-Wide 경계선 상황.
+          </div>
+          
+          <div style="margin-top: 20px;">
+            <div class="insight success" style="border-left-color: #4caf50; background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.05) 100%); color: #a5d6a7;">
+              <strong style="color: #81c784;">① 전환 비용 (Switching Costs) — 강</strong><br>
+              Gotham/Foundry/AIP는 고객 데이터 온톨로지에 수년 깊이 내재화. 교체 시 '수십 년치 작업' 재수행 필요.
+              NYPD 데이터 이전 거부 사례가 역설적으로 잠금 효과 실증.
+            </div>
+            <div class="insight success" style="border-left-color: #9c27b0; background: linear-gradient(135deg, rgba(156, 39, 176, 0.2) 0%, rgba(156, 39, 176, 0.05) 100%); color: #ce93d8; margin-top: 12px;">
+              <strong style="color: #ba68c8;">② 정부 보안 허가 (Intangible Assets) — 매우 강</strong><br>
+              NSA·CIA급 기밀 취급 인가 20년 네트워크. 신진 스타트업, AWS, Microsoft도 
+              동일 수준 재현에 10년+ 소요. 분류 데이터 환경 배포 경험은 사실상 진입 장벽.
+            </div>
+            <div class="insight" style="border-left-color: #64b5f6; margin-top: 12px;">
+              <strong>③ 네트워크 효과 (Network Effects) — 제한적</strong><br>
+              기관 간 데이터 공유 시 가치 증가. 그러나 B2B 특성상 순수 플랫폼형 
+              네트워크 효과는 약함. AIPCon 생태계가 간접 효과 창출 중.
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">📢 CEO 가이던스 이행 기록 (7개 공약)</div>
+          <div class="insight success">
+            ✅ <strong>가이던스 정확도:</strong> 7개 공약 중 6개 이행, 1개(국제 상업) 미달성. 
+            재무 수치는 지속 보수적 제시 후 초과 달성 패턴.
+          </div>
+          
+          <div style="margin-top: 20px;">
+            <div class="insight success" style="border-left-color: #4caf50; background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.05) 100%); color: #a5d6a7;">
+              <strong style="color: #81c784;">✓ 2021 매출 성장률: 2025년까지 연간 30% 달성</strong><br>
+              실제: 2021 +41%, 2022 +24%, 2023 +17%, 2024 +29%. 5년 CAGR 33%. 공약 초과 달성.
+            </div>
+            <div class="insight success" style="border-left-color: #4caf50; background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.05) 100%); color: #a5d6a7; margin-top: 12px;">
+              <strong style="color: #81c784;">✓ 분기 GAAP 수익성: 2025년까지 달성</strong><br>
+              실제: Q1 2023부터 지속 GAAP 흑자. 목표보다 2년 이른 달성.
+            </div>
+            <div class="insight warning" style="border-left-color: #ffc107; background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 193, 7, 0.05) 100%); color: #ffe082; margin-top: 12px;">
+              <strong style="color: #ffb74d;">△ 국제 상업 성장 가속화</strong><br>
+              실제: 2023–2024년 Intl Comm +3~9% 성장. 부진 지속. 공약 미달성.
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">💬 Alex Karp CEO 핵심 발언</div>
+          <div style="background: linear-gradient(135deg, rgba(33, 150, 243, 0.1) 0%, rgba(33, 150, 243, 0.05) 100%); border-left: 4px solid #2196f3; border-radius: 6px; padding: 16px; margin-bottom: 12px; border-top: 1px solid #003d7a; border-right: 1px solid #333; border-bottom: 1px solid #333; font-style: italic; color: #b3e5fc; line-height: 1.8;">
+            <strong style="color: #64b5f6;">"We are building the software backbone of American industrial and military supremacy. There is no Plan B."</strong><br>
+            <span style="font-size: 11px; color: #5c9dd0;">— Q3 2024 어닝콜</span><br>
+            <span style="font-size: 11px; color: #666; margin-top: 8px; display: block; font-style: normal;">📌 해석: 경쟁 우위 및 전략적 포지셔닝에 대한 확신. 미국 방위산업에서 독점적 지위 인정.</span>
+          </div>
+          <div style="background: linear-gradient(135deg, rgba(33, 150, 243, 0.1) 0%, rgba(33, 150, 243, 0.05) 100%); border-left: 4px solid #2196f3; border-radius: 6px; padding: 16px; border-top: 1px solid #003d7a; border-right: 1px solid #333; border-bottom: 1px solid #333; font-style: italic; color: #b3e5fc; line-height: 1.8;">
+            <strong style="color: #64b5f6;">"The market and our customers have validated that Palantir is the AI operating system for the enterprise."</strong><br>
+            <span style="font-size: 11px; color: #5c9dd0;">— Q4 2024 어닝콜</span><br>
+            <span style="font-size: 11px; color: #666; margin-top: 8px; display: block; font-style: normal;">📌 해석: AIP(AI Platform) 시장 지위 확인. 엔터프라이즈 AI 표준으로 자리매김.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: 리스크 분석 -->
+      <div id="tab-3" class="tab-content" style="display: none;">
+        <div class="section">
+          <div class="section-title">⚠️ 리스크 대시보드 (우선순위순)</div>
+          
+          <div class="risk-item" style="border-left-color: #ff1744;">
+            <div class="risk-title">🔴 CRITICAL — 밸류에이션 리스크</div>
+            <div class="risk-desc">
+              <strong>현황:</strong> 2026년 4월 P/S 66.6x, P/E 207x, EV/EBITDA 202x. 역사적 버블 수준.<br>
+              <strong>영향:</strong> 성장률 둔화 또는 거시 금리 상승 시 30~50% 이상 조정 가능. 
+              "버핏 기준" 합리적 가격 조건 불충족.<br>
+              <strong>대응:</strong> 주가 조정(P/S 20~30x) 시 강력 매수 기회.
+            </div>
+          </div>
+          
+          <div class="risk-item high">
+            <div class="risk-title">🟠 HIGH — 정부 계약 집중 리스크</div>
+            <div class="risk-desc">
+              <strong>현황:</strong> 매출의 54.8%이 정부 세그먼트 (US Gov 32.1% + Intl Gov 22.7%).<br>
+              <strong>영향:</strong> DOGE 예산 삭감, 방위비 재편성 시 핵심 매출 기반 위협. 
+              2023년 계속결의안 지연 사례 실증.<br>
+              <strong>완화:</strong> US Comm 비중 확대(45%) 진행 중.
+            </div>
+          </div>
+          
+          <div class="risk-item high">
+            <div class="risk-title">🟠 HIGH — 국제 매출 정체 리스크</div>
+            <div class="risk-desc">
+              <strong>현황:</strong> 국제 상업 2023~2024년 연속 3~4% 성장. 전체 성장 기여도 감소.<br>
+              <strong>영향:</strong> SAP, Siemens, 중국 업체 경쟁 가속화. 
+              2020년 국제 비중 48% → 2024년 34%로 하락 (미국 쏠림 심화).<br>
+              <strong>우려:</strong> 해외 성장 전략 재검토 필요. 유럽 진출 전략 명확화 부족.
+            </div>
+          </div>
+          
+          <div class="risk-item medium">
+            <div class="risk-title">🟡 MEDIUM — SBC(주식기반보상) 희석 리스크</div>
+            <div class="risk-desc">
+              <strong>현황:</strong> FY2024 SBC $692M = 매출의 24.2%. 주식 수 연간 4.67% 증가.<br>
+              <strong>영향:</strong> EPS 성장을 약 5% 잠식. SAR(주식승인권) 제도 전환(2024년) 효과 아직 미미.<br>
+              <strong>경고:</strong> SBC 절대액 다시 증가 (2023년 $476M → 2024년 $692M, +45%).
+            </div>
+          </div>
+          
+          <div class="risk-item medium">
+            <div class="risk-title">🟡 MEDIUM — 경쟁 심화 리스크</div>
+            <div class="risk-desc">
+              <strong>현황:</strong> Microsoft Azure AI, AWS, Databricks 엔터프라이즈 AI 진출 가속.<br>
+              <strong>영향:</strong> 오픈소스 AI(LLaMA) 발전이 온톨로지 층 차별성 약화 가능. 
+              Michael Burry의 경쟁 우위 부정 발언(2026년 2월) 시장 충격.<br>
+              <strong>강점:</strong> 20년 정부 보안 허가 네트워크는 단기 복제 불가.
+            </div>
+          </div>
+          
+          <div class="risk-item medium">
+            <div class="risk-title">🟡 MEDIUM — AI 규제 및 윤리 리스크</div>
+            <div class="risk-desc">
+              <strong>현황:</strong> 감시 인프라 비판, NYPD 데이터 잠금 논란.<br>
+              <strong>영향:</strong> EU AI Act, 미국 AI 행정명령 등 규제 강화 시 정부 계약 조건 변경 가능. 
+              사생활 침해 소송 위험.<br>
+              <strong>미해결:</strong> 데이터 이전 방해 문제의 법적 해석 불명확.
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">📊 투자 전 체크리스트 최종 평가</div>
+          <div class="insight warning" style="border-left-color: #ffc107; background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 193, 7, 0.05) 100%); color: #ffe082; margin-bottom: 16px;">
+            <strong style="color: #ffb74d;">종합 평가: 조건부 관심 (고밸류에이션 해소 전 진입 신중)</strong><br>
+            사업 품질, 경영진 신뢰도, 경쟁 우위는 최상위권. 
+            그러나 현재 밸류에이션(P/S 66x)은 10년치 완벽한 성장을 선반영. 
+            <strong>주가 조정 시(P/S 20~30x) 강력 매수 기회.</strong>
+          </div>
+
+          <div class="chart-row">
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0; margin-bottom: 8px;">체크리스트 점수</div>
+              <div class="stat-value" style="color: #ffb74d;">13/20점</div>
+              <div class="stat-label">6개 미달성 (밸류에이션+리스크)</div>
+            </div>
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0; margin-bottom: 8px;">핵심 강점</div>
+              <div class="stat-value" style="color: #4caf50; font-size: 18px;">🟢</div>
+              <div class="stat-label">경제적 해자 (전환비용)</div>
+            </div>
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0; margin-bottom: 8px;">핵심 약점</div>
+              <div class="stat-value" style="color: #ff6b6b; font-size: 18px;">🔴</div>
+              <div class="stat-label">버블 밸류에이션</div>
+            </div>
+            <div class="stat-box">
+              <div style="font-size: 11px; color: #5c9dd0; margin-bottom: 8px;">투자 시기</div>
+              <div class="stat-value" style="color: #ffc107; font-size: 18px;">⏳</div>
+              <div class="stat-label">매수 기회 대기</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">🎯 투자 결정 매트릭스</div>
+          <div class="insight success">
+            <strong>강력 매도:</strong> P/S > 50x, 분기 성장률 < 20%
+          </div>
+          <div class="insight">
+            <strong>보유:</strong> P/S 20~50x, 분기 성장률 20~30%
+          </div>
+          <div class="insight warning">
+            <strong>대기:</strong> P/S > 60x (현재 위치 66.6x ⚠️)
+          </div>
+          <div class="insight success">
+            <strong>강력 매수:</strong> P/S < 30x, 마진 > 35%
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- FOOTER -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="footer">
+      <strong>Palantir Technologies (PLTR) 멀티에이전트 종합 분석</strong><br>
+      분석 기준: 2026년 4월 10일 | 
+      📊 SEC 10-K 5개(FY2018–2024) + 10-Q 7개 + 어닝콜 8회 기반<br>
+      ⚠️ 투자 권유 아님 | 모든 데이터는 공개 공시 기반 | 
+      <span style="color: #444;">최종 작성일: 2026년 4월</span>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- JAVASCRIPT: TAB SWITCHING & CHARTS -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <script>
+    // ─── TAB SWITCHING ───
+    function switchTab(idx) {
+      // 탭 버튼 활성화 변경
+      document.querySelectorAll('.tab').forEach((tab, i) => {
+        if (i === idx) {
+          tab.classList.add('active');
+        } else {
+          tab.classList.remove('active');
+        }
+      });
+      
+      // 콘텐츠 표시/숨김
+      document.querySelectorAll('.tab-content').forEach((content, i) => {
+        if (i === idx) {
+          content.style.display = 'block';
+        } else {
+          content.style.display = 'none';
+        }
+      });
+      
+      // 차트 리사이즈 (필요 시)
+      setTimeout(() => {
+        if (revenueChart) revenueChart.resize();
+        if (marginChart) marginChart.resize();
+        if (segmentChart) segmentChart.resize();
+      }, 100);
+    }
+
+    // ─── CHART INSTANCES ───
+    let revenueChart, marginChart, segmentChart;
+
+    // ─── CHART 1: 연간 매출 & YoY 성장률 ───
+    const ctx1 = document.getElementById('revenueChart').getContext('2d');
+    revenueChart = new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: ['2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+        datasets: [
+          {
+            label: '매출($M)',
+            data: [742, 743, 1093, 1542, 1906, 2225, 2866],
+            backgroundColor: '#2196f3',
+            yAxisID: 'y',
+            order: 2,
+            borderRadius: 4,
+            borderSkipped: false
+          },
+          {
+            label: 'YoY 성장률(%)',
+            data: [null, 0.1, 47.1, 41.1, 23.6, 16.8, 28.8],
+            borderColor: '#4caf50',
+            backgroundColor: 'transparent',
+            borderWidth: 3,
+            type: 'line',
+            yAxisID: 'y1',
+            pointRadius: 5,
+            pointBackgroundColor: '#4caf50',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            tension: 0.4,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            labels: { color: '#5c9dd0', font: { size: 12 }, padding: 16 }
+          }
+        },
+        scales: {
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            grid: { color: '#333' },
+            ticks: { color: '#5c9dd0', font: { size: 11 } },
+            title: { display: true, text: '매출($M)', color: '#5c9dd0', font: { size: 12 } }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            grid: { drawOnChartArea: false },
+            ticks: { color: '#4caf50', font: { size: 11 } },
+            title: { display: true, text: '성장률(%)', color: '#4caf50', font: { size: 12 } },
+            min: 0,
+            max: 50
+          },
+          x: {
+            grid: { color: '#333' },
+            ticks: { color: '#5c9dd0', font: { size: 11 } }
+          }
+        }
+      }
+    });
+
+    // ─── CHART 2: 마진 트렌드 ───
+    const ctx2 = document.getElementById('marginChart').getContext('2d');
+    marginChart = new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels: ['2020', '2021', '2022', '2023', '2024'],
+        datasets: [
+          {
+            label: 'GPM(%)',
+            data: [67.7, 78.0, 78.6, 80.6, 80.3],
+            borderColor: '#4caf50',
+            backgroundColor: 'rgba(76, 175, 80, 0.05)',
+            borderWidth: 3,
+            pointRadius: 5,
+            pointBackgroundColor: '#4caf50',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            tension: 0.4,
+            fill: true
+          },
+          {
+            label: '조정 영업마진(%)',
+            data: [12.0, 29.9, 17.9, 26.2, 37.1],
+            borderColor: '#9c27b0',
+            backgroundColor: 'transparent',
+            borderWidth: 3,
+            pointRadius: 5,
+            pointBackgroundColor: '#9c27b0',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            tension: 0.4
+          },
+          {
+            label: '순이익마진(%)',
+            data: [-106.8, -33.7, -19.6, 9.4, 16.1],
+            borderColor: '#ff9800',
+            backgroundColor: 'transparent',
+            borderWidth: 3,
+            pointRadius: 5,
+            pointBackgroundColor: '#ff9800',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            tension: 0.4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            labels: { color: '#5c9dd0', font: { size: 12 }, padding: 16 }
+          }
+        },
+        scales: {
+          y: {
+            grid: { color: '#333' },
+            ticks: {
+              color: '#5c9dd0',
+              font: { size: 11 },
+              callback: (v) => v + '%'
+            },
+            title: { display: true, text: '마진율(%)', color: '#5c9dd0' }
+          },
+          x: {
+            grid: { color: '#333' },
+            ticks: { color: '#5c9dd0', font: { size: 11 } }
+          }
+        }
+      }
+    });
+
+    // ─── CHART 3: 정부 vs 상업 세그먼트 ───
+    const ctx3 = document.getElementById('segmentChart').getContext('2d');
+    segmentChart = new Chart(ctx3, {
+      type: 'bar',
+      data: {
+        labels: ['2020', '2021', '2022', '2023', '2024'],
+        datasets: [
+          {
+            label: '정부',
+            data: [616, 897, 1072, 1222, 1570],
+            backgroundColor: '#2196f3',
+            stack: 'stack',
+            borderRadius: [4, 4, 0, 0]
+          },
+          {
+            label: '상업',
+            data: [484, 645, 834, 1003, 1296],
+            backgroundColor: '#4caf50',
+            stack: 'stack',
+            borderRadius: [4, 4, 0, 0]
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            labels: { color: '#5c9dd0', font: { size: 12 }, padding: 16 }
+          }
+        },
+        scales: {
+          y: {
+            grid: { color: '#333' },
+            ticks: {
+              color: '#5c9dd0',
+              font: { size: 11 },
+              callback: (v) => '$' + v + 'M'
+            }
+          },
+          x: {
+            grid: { color: '#333' },
+            ticks: { color: '#5c9dd0', font: { size: 11 } }
+          }
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>

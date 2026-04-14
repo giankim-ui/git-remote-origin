@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MSFT 분석 대시보드</title>
+
+  <!-- Tailwind Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js 4.x -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body class="bg-gray-50 font-sans">
+  <div class="w-full max-w-7xl mx-auto p-6 bg-white">
+    <h1 class="text-3xl font-bold text-gray-900 mb-6">MSFT 분석 대시보드 (FY2024-2025)</h1>
+
+    <!-- Tab Navigation -->
+    <div class="flex border-b border-gray-200 mb-8 overflow-x-auto">
+      <button id="btn-financial" class="tab-btn px-4 py-3 font-medium text-sm border-b-2 border-blue-600 text-blue-600 bg-white shadow" onclick="switchTab('financial')">재무 성과</button>
+      <button id="btn-segment" class="tab-btn px-4 py-3 font-medium text-sm border-b-2 border-transparent text-gray-600 hover:text-gray-900" onclick="switchTab('segment')">세그먼트 분석</button>
+      <button id="btn-governance" class="tab-btn px-4 py-3 font-medium text-sm border-b-2 border-transparent text-gray-600 hover:text-gray-900" onclick="switchTab('governance')">경영진 신뢰도</button>
+      <button id="btn-strategy_risk" class="tab-btn px-4 py-3 font-medium text-sm border-b-2 border-transparent text-gray-600 hover:text-gray-900" onclick="switchTab('strategy_risk')">해자 & 리스크</button>
+      <button id="btn-data_integrity" class="tab-btn px-4 py-3 font-medium text-sm border-b-2 border-transparent text-gray-600 hover:text-gray-900" onclick="switchTab('data_integrity')">데이터 검증</button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="space-y-6">
+      <!-- Tab 1: Financial Performance -->
+      <div id="tab-financial" class="tab-content space-y-6">
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">재무 트렌드 (FY2024-2025)</h2>
+          <div style="width: 100%; height: 300px;">
+            <canvas id="chart-financial"></canvas>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+          <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+            <div class="text-sm text-gray-600">Revenue 성장</div>
+            <div class="text-2xl font-bold text-emerald-700">+16%</div>
+            <div class="text-xs text-gray-500 mt-1">211.9B → 245.1B</div>
+          </div>
+          <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div class="text-sm text-gray-600">Op Margin 확대</div>
+            <div class="text-2xl font-bold text-blue-700">+100bp</div>
+            <div class="text-xs text-gray-500 mt-1">41.6% → 42.6%</div>
+          </div>
+          <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+            <div class="text-sm text-gray-600">EPS 성장</div>
+            <div class="text-2xl font-bold text-purple-700">+17%</div>
+            <div class="text-xs text-gray-500 mt-1">9.87 → 11.56</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Segment Analysis -->
+      <div id="tab-segment" class="tab-content hidden space-y-6">
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">세그먼트 매출 구성 및 성장률</h2>
+          <div style="width: 100%; height: 300px;">
+            <canvas id="chart-segment"></canvas>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="font-semibold text-gray-900 text-sm">Intelligent Cloud</div>
+            <div class="text-2xl font-bold text-blue-700 mt-2">44%</div>
+            <div class="text-xs text-gray-600 mt-2">
+              <div>FY24: 42% → FY25: 44%</div>
+              <div class="text-emerald-600 font-semibold">성장: +25%</div>
+              <div class="text-gray-500">Margin: 52%</div>
+            </div>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="font-semibold text-gray-900 text-sm">Productivity & Business</div>
+            <div class="text-2xl font-bold text-blue-700 mt-2">31%</div>
+            <div class="text-xs text-gray-600 mt-2">
+              <div>FY24: 30% → FY25: 31%</div>
+              <div class="text-emerald-600 font-semibold">성장: +11%</div>
+              <div class="text-gray-500">Margin: 45%</div>
+            </div>
+          </div>
+          <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="font-semibold text-gray-900 text-sm">Personal Computing</div>
+            <div class="text-2xl font-bold text-blue-700 mt-2">25%</div>
+            <div class="text-xs text-gray-600 mt-2">
+              <div>FY24: 28% → FY25: 25%</div>
+              <div class="text-emerald-600 font-semibold">성장: +8%</div>
+              <div class="text-gray-500">Margin: 28%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Governance -->
+      <div id="tab-governance" class="tab-content hidden space-y-6">
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">경영진 신뢰도 평가</h2>
+          <div class="space-y-4">
+            <div class="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg">
+              <div class="flex-1">
+                <div class="font-semibold text-gray-900">분기 가이던스 이행률 (Quarterly Guidance)</div>
+                <div class="text-sm text-gray-600 mt-1">Recent quarters FY2025</div>
+              </div>
+              <div class="px-4 py-2 rounded-lg font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">A 등급</div>
+            </div>
+            <div class="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg">
+              <div class="flex-1">
+                <div class="font-semibold text-gray-900">장기 전략 약속 투명성 (Strategic Promises)</div>
+                <div class="text-sm text-gray-600 mt-1">AI/Cloud investment commitment</div>
+              </div>
+              <div class="px-4 py-2 rounded-lg font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">A 등급</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Strategy & Risk -->
+      <div id="tab-strategy_risk" class="tab-content hidden space-y-6">
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">경제적 해자 (Economic Moat)</h2>
+          <div class="flex items-center gap-6">
+            <div class="flex-1" style="width: 100%; height: 350px;">
+              <canvas id="chart-moat"></canvas>
+            </div>
+            <div class="p-4 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 flex-shrink-0">
+              <div class="font-bold text-lg mb-2">모트 등급</div>
+              <div class="font-bold text-2xl">Wide</div>
+              <div class="text-sm mt-4 space-y-2">
+                <div>• AI 에코시스템</div>
+                <div>• 클라우드 스케일</div>
+                <div>• 엔터프라이즈 락인</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">리스크 매트릭스 (3x3)</h2>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="p-3 rounded-lg border bg-red-100 border-red-300">
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-bold mb-1 bg-red-600 text-white">High</span>
+              <div class="text-sm font-medium text-red-700">Cloud Competition</div>
+            </div>
+            <div class="p-3 rounded-lg border bg-red-100 border-red-300">
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-bold mb-1 bg-red-600 text-white">High</span>
+              <div class="text-sm font-medium text-red-700">Regulatory (AI)</div>
+            </div>
+            <div class="p-3 rounded-lg border bg-yellow-100 border-yellow-300">
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-bold mb-1 bg-yellow-500 text-white">Mid</span>
+              <div class="text-sm font-medium text-yellow-700">Talent Retention</div>
+            </div>
+            <div class="p-3 rounded-lg border bg-yellow-100 border-yellow-300">
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-bold mb-1 bg-yellow-500 text-white">Mid</span>
+              <div class="text-sm font-medium text-yellow-700">Pricing Pressure</div>
+            </div>
+            <div class="p-3 rounded-lg border bg-green-100 border-green-300">
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-bold mb-1 bg-green-600 text-white">Low</span>
+              <div class="text-sm font-medium text-green-700">Integration Risk</div>
+            </div>
+            <div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 5: Data Integrity -->
+      <div id="tab-data_integrity" class="tab-content hidden space-y-6">
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">데이터 완결성 검증</h2>
+          <div class="space-y-4">
+            <div class="p-4 bg-white border border-gray-200 rounded-lg">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="font-semibold text-gray-900">분석 완결성 점수</div>
+                  <div class="text-sm text-gray-600 mt-1">소스: SEC 10-K/10-Q (FY2024-2025)</div>
+                </div>
+                <div class="px-4 py-2 rounded-lg font-bold text-lg text-emerald-600 bg-emerald-50">높음 (9/10)</div>
+              </div>
+            </div>
+            <div class="p-4 bg-white border border-gray-200 rounded-lg">
+              <div class="font-semibold text-gray-900 mb-3">누락된 데이터 항목</div>
+              <ul class="text-sm text-gray-600 space-y-2">
+                <li>• Capex 세부 분류 (유지 vs 성장): 경영진 공개자료 필요</li>
+                <li>• 세그먼트 간 교차 매출: 내부 리포팅 필요</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 색상 팔레트
+    const PALETTE = ["#0A2240", "#1A5276", "#2E4057", "#1A7A4A", "#C0392B"];
+
+    // 데이터
+    const financialData = [
+      { period: "FY2024", revenue: 211.9, opIncome: 88.2, margin: 41.6 },
+      { period: "FY2025", revenue: 245.1, opIncome: 104.4, margin: 42.6 }
+    ];
+
+    const segmentData = [
+      { name: "Intelligent Cloud", FY2025: 44, growth: 25, margin: 52 },
+      { name: "Productivity & Business", FY2025: 31, growth: 11, margin: 45 },
+      { name: "Personal Computing", FY2025: 25, growth: 8, margin: 28 }
+    ];
+
+    const moatData = [
+      { dimension: "AI Ecosystem", value: 85 },
+      { dimension: "Cloud Scale", value: 90 },
+      { dimension: "Enterprise Lock-in", value: 75 },
+      { dimension: "Network Effects", value: 70 },
+      { dimension: "Data Advantages", value: 80 }
+    ];
+
+    // Chart.js Schema Adapter
+    function adaptToChartJS(data, labelKey, valueKeys) {
+      if (!data || data.length === 0) return { labels: [], datasets: [] };
+      const keys = Array.isArray(valueKeys) ? valueKeys : [valueKeys];
+      return {
+        labels: data.map(d => d[labelKey]),
+        datasets: keys.map((key, i) => ({
+          label: key,
+          data: data.map(d => d[key] !== null && d[key] !== undefined ? d[key] : null),
+          backgroundColor: PALETTE[i % PALETTE.length],
+          borderColor: PALETTE[i % PALETTE.length],
+          borderWidth: 2,
+          spanGaps: false
+        }))
+      };
+    }
+
+    // Chart Registry
+    const chartRegistry = {};
+
+    function registerChart(tabId, chartInstance) {
+      if (!chartRegistry[tabId]) chartRegistry[tabId] = [];
+      chartRegistry[tabId].push(chartInstance);
+    }
+
+    // Tab Switching with Canvas Destroy
+    function switchTab(tabId) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(el => {
+        el.classList.add('hidden');
+      });
+
+      // Deactivate all buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-blue-700', 'shadow', 'border-blue-600');
+        btn.classList.add('text-gray-600', 'border-transparent');
+      });
+
+      // Show selected tab
+      document.getElementById('tab-' + tabId).classList.remove('hidden');
+      document.getElementById('btn-' + tabId).classList.add('bg-white', 'text-blue-700', 'shadow', 'border-blue-600');
+      document.getElementById('btn-' + tabId).classList.remove('text-gray-600', 'border-transparent');
+
+      // Destroy existing charts
+      if (chartRegistry[tabId]) {
+        chartRegistry[tabId].forEach(chart => {
+          if (chart && typeof chart.destroy === 'function') chart.destroy();
+        });
+        chartRegistry[tabId] = [];
+      }
+
+      // Render new charts
+      renderChartsForTab(tabId);
+    }
+
+    function renderChartsForTab(tabId) {
+      if (tabId === 'financial') {
+        const ctx = document.getElementById('chart-financial');
+        if (ctx) {
+          const chartData = adaptToChartJS(financialData, 'period', ['revenue', 'opIncome']);
+          const chart = new Chart(ctx, {
+            type: 'bar',
+            data: chartData,
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+          });
+          registerChart('financial', chart);
+        }
+      } else if (tabId === 'segment') {
+        const ctx = document.getElementById('chart-segment');
+        if (ctx) {
+          const chartData = adaptToChartJS(segmentData, 'name', ['FY2025', 'growth']);
+          const chart = new Chart(ctx, {
+            type: 'bar',
+            data: chartData,
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+          });
+          registerChart('segment', chart);
+        }
+      } else if (tabId === 'strategy_risk') {
+        const ctx = document.getElementById('chart-moat');
+        if (ctx) {
+          const chartData = adaptToChartJS(moatData, 'dimension', ['value']);
+          const chart = new Chart(ctx, {
+            type: 'radar',
+            data: chartData,
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { r: { beginAtZero: true, max: 100 } } }
+          });
+          registerChart('strategy_risk', chart);
+        }
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      switchTab('financial');
+    });
+  </script>
+</body>
+</html>
