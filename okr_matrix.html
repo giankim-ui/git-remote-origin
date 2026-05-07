@@ -1,180 +1,194 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OKR Matrix — 목표와 우선순위 관리</title>
-  <style>
-/* ======================================================
-   OKR Matrix App — Global Styles
-   Layout: OKR section (top sticky) + Task section (bottom scroll)
-   ====================================================== */
-
-/* ── Variables ── */
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OKR Matrix — 목표와 우선순위 관리</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
 :root {
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-light: #eef2ff;
-  --success: #16a34a;
-  --success-bg: #f0fdf4;
-  --danger: #dc2626;
-  --danger-bg: #fef2f2;
-  --warning: #d97706;
-  --warning-bg: #fffbeb;
-  --info: #0891b2;
-  --info-bg: #ecfeff;
-
-  --bg: #f8fafc;
-  --surface: #ffffff;
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
-  --text: #0f172a;
-  --text-2: #475569;
-  --text-3: #94a3b8;
-  --radius: 8px;
-  --radius-lg: 12px;
-
+  --primary: #4f46e5; --primary-hover: #4338ca; --primary-light: #eef2ff;
+  --success: #16a34a; --success-bg: #f0fdf4;
+  --danger: #dc2626; --danger-bg: #fef2f2;
+  --warning: #d97706; --warning-bg: #fffbeb;
+  --info: #0891b2; --info-bg: #ecfeff;
+  --bg: #f8fafc; --surface: #ffffff;
+  --border: #e2e8f0; --border-strong: #cbd5e1;
+  --text: #0f172a; --text-2: #475569; --text-3: #94a3b8;
+  --radius: 8px; --radius-lg: 12px;
   --em1: #dc2626; --em1-bg: #fff0f0;
   --em2: #4f46e5; --em2-bg: #eef2ff;
   --em3: #d97706; --em3-bg: #fffbeb;
   --em4: #64748b; --em4-bg: #f8fafc;
-
   --header-h: 52px;
-  --okr-section-h: auto;   /* shrinks to content */
 }
-
-/* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 14px; }
 body {
   font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.5;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  background: var(--bg); color: var(--text); line-height: 1.5; min-height: 100vh;
 }
 button { cursor: pointer; font-family: inherit; font-size: inherit; border: none; background: none; }
 input, textarea, select { font-family: inherit; font-size: inherit; }
 table { border-collapse: collapse; width: 100%; }
 
-/* ── App shell ── */
-#app { display: flex; flex-direction: column; min-height: 100vh; }
+/* ── Auth Screen ── */
+#auth-screen {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+}
+.auth-card {
+  background: var(--surface); border-radius: var(--radius-lg); padding: 40px 36px;
+  width: 100%; max-width: 400px; box-shadow: 0 8px 32px rgba(79,70,229,.12);
+}
+.auth-logo { font-size: 22px; font-weight: 800; color: var(--primary); margin-bottom: 6px; }
+.auth-sub { color: var(--text-3); font-size: 13px; margin-bottom: 28px; }
+.auth-tabs { display: flex; gap: 0; margin-bottom: 24px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.auth-tab {
+  flex: 1; padding: 9px; font-size: 13px; font-weight: 600; color: var(--text-2);
+  background: var(--bg); border: none; cursor: pointer; transition: all .15s;
+}
+.auth-tab.active { background: var(--primary); color: #fff; }
+.auth-error { background: var(--danger-bg); color: var(--danger); border: 1px solid #fecaca; border-radius: var(--radius); padding: 10px 12px; font-size: 13px; margin-bottom: 14px; display: none; }
+.auth-error.show { display: block; }
+
+/* ── App Shell ── */
+#app-screen { display: none; flex-direction: column; min-height: 100vh; }
+#app-screen.visible { display: flex; }
 
 /* ── Header ── */
 .app-header {
-  height: var(--header-h);
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  padding: 0 24px;
-  gap: 12px;
-  position: sticky;
-  top: 0;
-  z-index: 200;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  height: var(--header-h); background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 24px; gap: 12px;
+  position: sticky; top: 0; z-index: 200; box-shadow: 0 1px 3px rgba(0,0,0,.06);
 }
-
-.app-logo {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--primary);
-  letter-spacing: -0.5px;
-}
+.app-logo { font-size: 18px; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
 .app-logo span { color: var(--text-2); font-weight: 500; }
-
 .header-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-#btn-import-okr { font-size: 12px; padding: 6px 12px; cursor: pointer; }
+.user-badge {
+  font-size: 12px; color: var(--text-2); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px;
+}
+.btn-logout {
+  font-size: 12px; color: var(--danger); background: var(--danger-bg);
+  border: 1px solid #fecaca; border-radius: var(--radius); padding: 5px 12px; font-weight: 600;
+}
+.btn-logout:hover { background: #fee2e2; }
 
-/* KR Import Modal */
-.import-kr-list { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 6px; background: var(--surface); }
-.import-kr-row { display: flex; align-items: flex-start; gap: 8px; padding: 8px 6px; border-radius: 4px; cursor: pointer; }
-.import-kr-row:hover { background: var(--primary-light); }
-.import-kr-row input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; }
-.import-kr-row span { font-size: 13px; line-height: 1.45; }
-.import-kr-row .kr-meta { color: var(--text-3); font-size: 11px; margin-left: 4px; }
-
-/* ── Main content: vertical stack ── */
+/* ── Main ── */
 .app-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
-  padding: 0 0 32px;
+  flex: 1; display: flex; flex-direction: column;
+  max-width: 1400px; margin: 0 auto; width: 100%; padding: 0 0 32px;
 }
 
-/* ── Section Labels ── */
-.section-label {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text);
+/* ── OKR Section ── */
+#okr-section-wrap {
+  position: sticky; top: var(--header-h); z-index: 100;
+  background: var(--surface); border-bottom: 2px solid var(--primary-light);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
 }
+#okr-section { padding: 16px 24px; max-width: 1400px; margin: 0 auto; }
+.okr-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.section-label { font-size: 18px; font-weight: 700; color: var(--text); }
+
+/* ── Objective Card ── */
+.objective-card {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--primary-light); border: 1.5px solid #c7d2fe;
+  border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 10px;
+}
+.objective-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+.objective-body { flex: 1; min-width: 0; }
+.objective-title { font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 6px; }
+.kr-list { display: flex; flex-direction: column; gap: 6px; }
+.kr-item {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 7px 10px;
+}
+.kr-title { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); }
+.kr-progress-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.kr-progress-bar { width: 80px; height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+.kr-progress-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width .3s; }
+.kr-pct { font-size: 11px; font-weight: 700; color: var(--primary); min-width: 28px; text-align: right; }
+.objective-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.okr-empty { padding: 32px 24px; text-align: center; color: var(--text-3); font-size: 13px; }
 
 /* ── Connector ── */
 .connector {
-  text-align: center;
-  color: var(--text-3);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 0;
-  letter-spacing: 0.5px;
-  background: var(--bg);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  text-align: center; color: var(--text-3); font-size: 12px; font-weight: 600;
+  padding: 6px 0; letter-spacing: 0.5px; background: var(--bg);
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
 }
 
-/* ── Footer ── */
-.app-footer {
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  padding: 8px 24px;
-  font-size: 12px;
-  color: var(--text-3);
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* ── Task Section ── */
+#task-section { padding: 20px 24px; }
+.task-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.task-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter-btn {
+  padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-2); cursor: pointer;
 }
-.save-status { padding: 2px 8px; border-radius: 20px; font-weight: 600; font-size: 11px; }
-.save-saved { color: var(--success); background: var(--success-bg); }
+.filter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* ── Eisenhower Matrix ── */
+.em-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.em-quadrant {
+  border-radius: var(--radius-lg); padding: 14px; min-height: 120px;
+  border: 1.5px solid;
+}
+.em-q1 { background: var(--em1-bg); border-color: #fca5a5; }
+.em-q2 { background: var(--em2-bg); border-color: #a5b4fc; }
+.em-q3 { background: var(--em3-bg); border-color: #fcd34d; }
+.em-q4 { background: var(--em4-bg); border-color: var(--border-strong); }
+.em-header { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.em-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 700; color: #fff;
+}
+.em-badge.em-q1 { background: var(--em1); }
+.em-badge.em-q2 { background: var(--em2); }
+.em-badge.em-q3 { background: var(--em3); }
+.em-badge.em-q4 { background: var(--em4); }
+.em-title { font-size: 12px; font-weight: 700; color: var(--text-2); }
+.em-subtitle { font-size: 10px; color: var(--text-3); }
+.task-items { display: flex; flex-direction: column; gap: 5px; }
+.task-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 8px 10px; transition: box-shadow .12s;
+}
+.task-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.task-item.done { opacity: .55; }
+.task-item.done .task-title { text-decoration: line-through; color: var(--text-3); }
+.task-check { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; accent-color: var(--primary); cursor: pointer; }
+.task-body { flex: 1; min-width: 0; }
+.task-title { font-size: 13px; color: var(--text); font-weight: 500; }
+.task-meta { display: flex; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
+.task-tag { font-size: 10px; padding: 1px 6px; border-radius: 4px; font-weight: 600; }
+.tag-kr { background: var(--primary-light); color: var(--primary); }
+.tag-op { background: var(--warning-bg); color: var(--warning); }
+.task-del { font-size: 14px; opacity: .35; padding: 0 3px; }
+.task-del:hover { opacity: 1; color: var(--danger); }
+.task-empty { padding: 20px; text-align: center; color: var(--text-3); font-size: 12px; }
 
 /* ── Buttons ── */
 .btn {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 7px 14px; border-radius: var(--radius);
-  font-weight: 600; font-size: 13px; line-height: 1;
-  transition: background .12s, color .12s, box-shadow .12s;
-  white-space: nowrap;
-  border: 1px solid transparent;
+  font-weight: 600; font-size: 13px; line-height: 1; transition: background .12s;
+  white-space: nowrap; border: 1px solid transparent;
 }
-.btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-primary:hover { background: var(--primary-hover); }
 .btn-sm { padding: 5px 10px; font-size: 12px; }
-.btn-block { width: 100%; justify-content: center; }
-.btn-xs { padding: 3px 8px; font-size: 11px; }
 .btn-ghost-sm {
-  background: transparent; color: var(--primary);
-  border: 1px solid var(--primary);
-  border-radius: 4px;
-  padding: 2px 8px; font-size: 11px; font-weight: 600;
+  background: transparent; color: var(--primary); border: 1px solid var(--primary);
+  border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600;
 }
 .btn-ghost-sm:hover { background: var(--primary-light); }
-.btn-icon {
-  background: transparent; border: none; font-size: 14px;
-  padding: 2px 4px; border-radius: 4px; line-height: 1;
-  opacity: .5; transition: opacity .1s;
-}
+.btn-icon { background: transparent; border: none; font-size: 14px; padding: 2px 4px; border-radius: 4px; opacity: .5; }
 .btn-icon:hover { opacity: 1; }
-.btn-icon-sm {
-  background: transparent; border: none; font-size: 12px;
-  padding: 1px 3px; border-radius: 3px; line-height: 1;
-  opacity: .4; transition: opacity .1s;
-}
-.btn-icon-sm:hover { opacity: 1; }
 .btn-danger-sm { color: var(--danger); }
 
 /* ── Forms ── */
@@ -183,8 +197,7 @@ table { border-collapse: collapse; width: 100%; }
 .form-control {
   padding: 8px 10px; border: 1px solid var(--border-strong);
   border-radius: var(--radius); font-size: 13px; color: var(--text);
-  background: var(--surface); width: 100%;
-  transition: border-color .12s, box-shadow .12s;
+  background: var(--surface); width: 100%; transition: border-color .12s;
 }
 .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.15); }
 textarea.form-control { resize: vertical; min-height: 56px; }
@@ -194,2439 +207,532 @@ select.form-control {
   background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
 }
 
-/* ── Empty states ── */
-.okr-empty, .task-empty {
-  padding: 48px 24px; text-align: center;
-  color: var(--text-3); font-size: 13px;
-}
-
 /* ── Modal ── */
 .modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(15,23,42,.5); backdrop-filter: blur(3px);
-  align-items: center; justify-content: center;
-  z-index: 1000; padding: 16px;
+  position: fixed; inset: 0; background: rgba(15,23,42,.5); backdrop-filter: blur(3px);
+  display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px;
 }
+.modal-overlay.open { display: flex; }
 .modal-dialog {
-  background: var(--surface); border-radius: var(--radius-lg);
-  padding: 28px; width: 100%; max-width: 480px;
-  max-height: 90vh; overflow-y: auto;
-  position: relative;
-  box-shadow: 0 20px 40px rgba(0,0,0,.15);
+  background: var(--surface); border-radius: var(--radius-lg); padding: 28px;
+  width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto;
+  position: relative; box-shadow: 0 20px 40px rgba(0,0,0,.15);
   animation: modal-in .18s ease;
 }
 @keyframes modal-in { from { opacity:0; transform:scale(.96) translateY(-6px); } to { opacity:1; transform:none; } }
 .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
 .modal-close-btn {
-  position: absolute; top: 14px; right: 14px;
-  width: 28px; height: 28px; border-radius: 50%;
-  font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center;
-  color: var(--text-3); background: transparent;
+  position: absolute; top: 14px; right: 14px; width: 28px; height: 28px;
+  border-radius: 50%; font-size: 18px; display: flex; align-items: center; justify-content: center;
+  color: var(--text-3);
 }
 .modal-close-btn:hover { background: var(--border); color: var(--text); }
-.modal-form { display: flex; flex-direction: column; }
-
-/* ── Phase 4: 운영업무 모달 필드 ── */
-.operational-field {
-  display: flex;
-  align-items: center;
-  padding: 10px 12px;
-  background: var(--warning-bg);
-  border: 1px solid #fde68a;
-  border-radius: var(--radius);
-  margin-bottom: 4px;
-}
-.operational-label {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  cursor: pointer;
-  flex: 1;
-}
-.operational-checkbox {
-  width: 16px;
-  height: 16px;
-  margin-top: 2px;
-  flex-shrink: 0;
-  accent-color: var(--warning);
-  cursor: pointer;
-}
-.checkbox-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.checkbox-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-}
-.checkbox-desc {
-  font-size: 11px;
-  color: var(--text-2);
-}
-.operational-checkbox:checked ~ .checkbox-text .checkbox-title {
-  color: var(--warning);
-}
-
-/* KR select 비활성화 */
-.kr-select-field.disabled {
-  opacity: 0.55;
-  pointer-events: none;
-}
-.kr-select-field.disabled select {
-  background: var(--bg);
-  cursor: not-allowed;
-}
 
 /* ── Toasts ── */
-.toast-container {
-  position: fixed; bottom: 20px; right: 20px; z-index: 2000;
-  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
-}
+.toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
 .toast {
-  padding: 10px 16px; border-radius: var(--radius);
-  font-size: 13px; font-weight: 500; pointer-events: all;
-  min-width: 220px; max-width: 340px;
-  box-shadow: 0 4px 12px rgba(0,0,0,.1);
-  opacity: 0; transform: translateX(40px);
-  transition: opacity .2s, transform .2s;
+  padding: 10px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 500;
+  min-width: 220px; max-width: 340px; box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  opacity: 0; transform: translateX(40px); transition: opacity .2s, transform .2s;
 }
 .toast-in { opacity: 1; transform: none; }
-.toast-out { opacity: 0; transform: translateX(40px); }
 .toast-success { background: var(--success-bg); color: var(--success); border: 1px solid #bbf7d0; }
 .toast-error { background: var(--danger-bg); color: var(--danger); border: 1px solid #fecaca; }
 .toast-info { background: var(--info-bg); color: var(--info); border: 1px solid #a5f3fc; }
 
-/* ── EM badges ── */
-.em-badge {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; border-radius: 50%;
-  font-size: 11px; font-weight: 700; color: #fff;
+/* ── Loading ── */
+#loading-screen {
+  position: fixed; inset: 0; background: #fff; display: flex;
+  align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 12px;
 }
-.em-q1 { background: var(--em1); }
-.em-q2 { background: var(--em2); }
-.em-q3 { background: var(--em3); }
-.em-q4 { background: var(--em4); }
-
-/* ======================================================
-   OKR Section — Top sticky panel
-   ====================================================== */
-
-#okr-section-wrap {
-  position: sticky;
-  top: var(--header-h);
-  z-index: 100;
-  background: var(--surface);
-  border-bottom: 2px solid var(--primary-light);
-  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+.spinner {
+  width: 36px; height: 36px; border: 3px solid var(--border);
+  border-top-color: var(--primary); border-radius: 50%; animation: spin .7s linear infinite;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-#okr-section {
-  padding: 16px 24px;
-  max-width: 1400px;
-  margin: 0 auto;
+/* ── Footer ── */
+.app-footer {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 8px 24px; font-size: 12px; color: var(--text-3);
+  display: flex; align-items: center; gap: 12px;
 }
-
-/* ── Section header row ── */
-.okr-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-/* ── Objective card ── */
-.objective-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  background: var(--primary-light);
-  border-radius: var(--radius);
-  padding: 10px 14px;
-  margin-bottom: 12px;
-}
-.objective-label {
-  font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
-  color: var(--primary); white-space: nowrap; margin-top: 2px;
-}
-.objective-text {
-  flex: 1; font-size: 14px; font-weight: 600; color: var(--text);
-  line-height: 1.4;
-}
-
-/* ── KR table ── */
-.kr-table-wrap { overflow-x: auto; }
-
-.kr-table {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  font-size: 13px;
-}
-
-.kr-table thead th {
-  background: var(--bg);
-  padding: 7px 12px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-2);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-}
-
-.kr-row {
-  cursor: pointer;
-  transition: background .1s;
-  border-bottom: 1px solid var(--border);
-}
-.kr-row:last-child { border-bottom: none; }
-.kr-row:hover { background: var(--primary-light); }
-.kr-row.kr-active { background: #e0e7ff; }
-
-.kr-table td { padding: 8px 12px; vertical-align: middle; }
-
-.kr-no-cell { width: 60px; text-align: center; }
-.kr-no-badge {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; border-radius: 50%;
-  background: var(--primary); color: #fff;
-  font-size: 11px; font-weight: 700;
-}
-
-.kr-title-cell { font-weight: 500; }
-
-.kr-progress-cell { width: 160px; }
-.kr-progress-bar-wrap { display: flex; align-items: center; gap: 8px; }
-.kr-progress-bar {
-  flex: 1; height: 6px; background: var(--border); border-radius: 99px; overflow: hidden;
-}
-.kr-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary), #818cf8);
-  border-radius: 99px;
-  transition: width .3s;
-}
-.kr-progress-label { font-size: 11px; font-weight: 700; color: var(--primary); min-width: 32px; }
-
-.kr-action-cell { width: 64px; white-space: nowrap; }
-.kr-edit-btn, .kr-del-btn { opacity: 0; transition: opacity .1s; }
-.kr-row:hover .kr-edit-btn,
-.kr-row:hover .kr-del-btn,
-.kr-row.kr-active .kr-edit-btn,
-.kr-row.kr-active .kr-del-btn { opacity: 1; }
-
-/* Add KR row */
-.kr-add-row { border-top: 1px dashed var(--border); }
-.kr-add-td { padding: 6px 12px !important; }
-.btn-add-kr {
-  font-size: 12px; color: var(--primary); font-weight: 600;
-  background: transparent; border: none; cursor: pointer; padding: 2px 4px;
-  border-radius: 4px;
-  transition: background .1s;
-}
-.btn-add-kr:hover { background: var(--primary-light); }
-
-/* ── Accordion toggle button ── */
-.okr-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-.okr-collapse-btn {
-  background: none;
-  border: none;
-  color: #FF6600;
-  font-size: 1rem;
-  cursor: pointer;
-  margin-left: auto;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: opacity 0.2s;
-  line-height: 1;
-}
-.okr-collapse-btn:hover { opacity: 0.7; }
-
-/* ── KR Drag & Drop ── */
-.kr-drag-handle {
-  width: 24px;
-  text-align: center;
-  cursor: grab;
-  color: #bbb;
-  user-select: none;
-  font-size: 14px;
-  opacity: 0;
-  transition: opacity 0.1s;
-}
-.kr-row:hover .kr-drag-handle { opacity: 1; }
-.kr-drag-handle:hover { color: #FF6600; cursor: grab; }
-.kr-drag-handle:active { cursor: grabbing; }
-
-.kr-row.dragging { opacity: 0.4; background: #fff3e0 !important; }
-.kr-row.drop-above { border-top: 2px solid #FF6600; }
-.kr-row.drop-below { border-bottom: 2px solid #FF6600; }
-
-/* KR drag placeholder row */
-.kr-placeholder td {
-  height: 38px;
-  background: var(--primary-light);
-  border-top: 2px dashed var(--primary);
-  border-bottom: 2px dashed var(--primary);
-  padding: 0;
-}
-
-/* ======================================================
-   Task Section — Bottom scrollable panel
-   ====================================================== */
-
-#task-section-wrap {
-  flex: 1;
-  background: var(--surface);
-  padding: 0 0 32px;
-}
-
-#task-section {
-  padding: 16px 24px 0;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-/* ── Section header ── */
-.task-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-/* ── Task table ── */
-.task-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
-
-.task-table { font-size: 12.5px; }
-
-.task-table thead th {
-  background: var(--bg);
-  padding: 7px 10px;
-  text-align: left;
-  font-size: 10.5px;
-  font-weight: 700;
-  color: var(--text-2);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  border-bottom: 1px solid var(--border-strong);
-  white-space: nowrap;
-  position: sticky;
-  top: 0;
-}
-
-/* Task group row */
-.task-group-row {
-  background: #f1f5f9;
-  border-top: 2px solid var(--border-strong);
-  border-bottom: 1px solid var(--border);
-}
-.task-group-row:first-child { border-top: none; }
-
-.task-group-cell { padding: 5px 10px !important; }
-.task-group-inner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.task-group-title {
-  font-weight: 700;
-  font-size: 12.5px;
-  color: var(--text);
-}
-
-/* SubTask rows */
-.task-row {
-  border-bottom: 1px solid var(--border);
-  transition: background .1s;
-}
-.task-row:hover { background: #f8fafc; }
-.task-row.row-highlight { background: #eef2ff; }
-.task-row.row-dimmed { opacity: .45; }
-
-.task-table tbody td { padding: 6px 10px; vertical-align: middle; }
-
-/* Columns */
-.td-em { width: 36px; text-align: center; }
-.td-order { width: 32px; text-align: center; color: var(--text-3); font-size: 11px; }
-
-.td-subtask { min-width: 200px; }
-.td-subtask.st-done .st-title { text-decoration: line-through; color: var(--text-3); }
-.st-checkbox { width: 14px; height: 14px; accent-color: var(--primary); cursor: pointer; margin-right: 6px; vertical-align: middle; }
-.st-title { vertical-align: middle; }
-
-.td-date { width: 76px; white-space: nowrap; color: var(--text-2); font-size: 11.5px; }
-.td-overdue { color: var(--danger); font-weight: 600; }
-
-.td-task { min-width: 120px; color: var(--text-2); font-size: 12px; }
-
-.td-progress { width: 90px; }
-.mini-progress-wrap { display: flex; align-items: center; gap: 5px; }
-.mini-progress-bar { flex: 1; height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
-.mini-progress-fill { height: 100%; background: linear-gradient(90deg, var(--success), #4ade80); transition: width .3s; }
-.mini-progress-label { font-size: 10.5px; color: var(--text-2); min-width: 28px; font-weight: 600; }
-
-.td-kr-no { width: 54px; text-align: center; }
-.kr-badge {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; border-radius: 50%;
-  font-size: 10px; font-weight: 700;
-  background: var(--primary-light); color: var(--primary);
-}
-
-.td-kr { min-width: 160px; color: var(--text-2); font-size: 11.5px; }
-.td-memo { min-width: 100px; color: var(--text-3); font-size: 11px; }
-
-.td-actions { width: 52px; white-space: nowrap; }
-.td-actions .btn-icon-sm { opacity: 0; }
-.task-row:hover .td-actions .btn-icon-sm,
-.task-group-row:hover .btn-icon-sm { opacity: 1; }
-
-/* ── Drag & Drop ── */
-.drag-handle, .task-drag-handle {
-  width: 24px;
-  text-align: center;
-  cursor: grab;
-  color: #bbb;
-  user-select: none;
-  font-size: 14px;
-  opacity: 0;
-  transition: opacity 0.1s;
-}
-.task-row:hover .drag-handle,
-.task-group-row:hover .task-drag-handle { opacity: 1; }
-.drag-handle:hover, .task-drag-handle:hover { color: #FF6600; }
-.drag-handle:active, .task-drag-handle:active { cursor: grabbing; }
-
-.task-row.dragging, .task-group-row.dragging { opacity: 0.4; background: #fff3e0 !important; }
-.task-row.drop-above, .task-group-row.drop-above { border-top: 2px solid #FF6600; }
-.task-row.drop-below, .task-group-row.drop-below { border-bottom: 2px solid #FF6600; }
-
-/* ── Phase 4: 운영업무 섹션 구분선 ── */
-.operational-section-divider td {
-  padding: 6px 12px;
-  background: var(--warning-bg);
-  border-top: 2px dashed #fbbf24;
-  border-bottom: 1px solid #fde68a;
-}
-.operational-section-title {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--warning);
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
-}
-
-/* 운영업무 Task 그룹 행 */
-.task-group-row.operational-task-row {
-  background: #fffbeb;
-}
-
-/* 운영 배지 */
-.operational-task-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 7px;
-  background: var(--warning-bg);
-  color: var(--warning);
-  border: 1px solid #fbbf24;
-  border-radius: 20px;
-  font-size: 10.5px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-/* ── Phase 3: 탭 헤더 ── */
-.task-tab-bar {
-  display: flex;
-  gap: 6px;
-  padding: 10px 0 12px;
-}
-
-.task-tab-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 14px;
-  border: 1px solid var(--border-strong);
-  border-radius: 20px;
-  background: transparent;
-  color: var(--text-2);
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .12s, color .12s, border-color .12s;
-}
-.task-tab-btn:hover {
-  background: var(--primary-light);
-  border-color: var(--primary);
-  color: var(--primary);
-}
-.task-tab-btn.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-
-.tab-label { font-size: 12.5px; }
-
-.tab-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: rgba(255,255,255,.25);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-}
-.task-tab-btn:not(.active) .tab-count {
-  background: var(--border-strong);
-  color: var(--text-2);
-}
-
-/* ── Phase 3: 완료 Task 그룹 행 ── */
-.task-group-row.task-completed-row {
-  background: #f0fdf4;
-  border-top: 2px solid #bbf7d0;
-}
-
-.task-completed-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 8px;
-  background: var(--success);
-  color: #fff;
-  border-radius: 20px;
-  font-size: 10.5px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.task-revert-btn {
-  padding: 2px 8px;
-  border: 1px solid var(--border-strong);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--text-2);
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background .1s, color .1s;
-  white-space: nowrap;
-}
-.task-revert-btn:hover {
-  background: var(--warning-bg);
-  color: var(--warning);
-  border-color: var(--warning);
-}
-
-/* ── Phase 3: 탭 전환 페이드 아웃 (완료 탭 이동 시) ── */
-@keyframes fadeSlideOut {
-  to { opacity: 0; transform: translateX(16px); }
-}
-.task-group-row.transitioning {
-  animation: fadeSlideOut .3s ease forwards;
-}
-
-/* ── Responsive ── */
-@media (max-width: 767px) {
-  .td-kr, .td-memo, .td-order { display: none; }
-  .task-table-wrap { font-size: 12px; }
-}
-
-  </style>
+.save-status { padding: 2px 8px; border-radius: 20px; font-weight: 600; font-size: 11px; }
+.save-saved { color: var(--success); background: var(--success-bg); }
+</style>
 </head>
 <body>
-  <div id="app">
-    <header class="app-header" role="banner">
-      <div class="app-logo">OKR<span>Matrix</span></div>
-      <div class="header-actions">
-        <button type="button" id="btn-import-okr" class="btn btn-ghost-sm" title="다른 팀원의 KR 복사">📥 OKR 가져오기</button>
-      </div>
-    </header>
 
-    <main class="app-main" role="main">
-      <!-- OKR Section: sticky top -->
-      <div id="okr-section-wrap">
-        <div id="okr-section" role="region" aria-label="OKR 섹션"></div>
-      </div>
+<!-- 로딩 -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div style="color:var(--text-3);font-size:13px;">불러오는 중...</div>
+</div>
 
-      <!-- Connector -->
-      <div class="connector" aria-hidden="true">▼ 연동 — OKR Key Results → Task</div>
-
-      <!-- Task Section: scrollable bottom -->
-      <div id="task-section-wrap">
-        <div id="task-section" role="region" aria-label="Task 섹션"></div>
-      </div>
-    </main>
-
-    <footer class="app-footer" role="contentinfo">
-      <span>OKR Matrix App</span>
-      <span id="save-status" class="save-status save-saved" aria-live="polite">저장 완료</span>
-    </footer>
+<!-- 로그인/회원가입 화면 -->
+<div id="auth-screen" style="display:none;">
+  <div class="auth-card">
+    <div class="auth-logo">OKRMatrix</div>
+    <div class="auth-sub">목표와 우선순위 관리 — 로그인하여 시작하세요</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">로그인</button>
+      <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">회원가입</button>
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="form-group">
+      <label class="form-label">이메일</label>
+      <input type="email" id="auth-email" class="form-control" placeholder="name@company.com" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">비밀번호</label>
+      <input type="password" id="auth-password" class="form-control" placeholder="6자 이상" />
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;" id="auth-submit-btn" onclick="handleAuth()">
+      로그인
+    </button>
+    <div id="signup-notice" style="display:none;margin-top:12px;font-size:12px;color:var(--text-3);text-align:center;">
+      가입 후 이메일 인증 없이 바로 로그인할 수 있어요
+    </div>
   </div>
+</div>
 
-  <script>
-// src/utils/dom.ts
-function qs(sel, root = document) {
-  const el2 = root.querySelector(sel);
-  if (!el2) throw new Error(`Element not found: ${sel}`);
-  return el2;
-}
-function el(tag, cls = [], attrs = {}) {
-  const e = document.createElement(tag);
-  if (cls.length) e.className = cls.join(" ");
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  return e;
-}
-function clearEl(e) {
-  while (e.firstChild) e.removeChild(e.firstChild);
-}
-function uid(prefix = "id") {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-function fmt(iso) {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-");
-  return `${y ?? ""}.${m ?? ""}.${d ?? ""}`;
-}
-function todayISO() {
-  return (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-}
-function nowISO() {
-  return (/* @__PURE__ */ new Date()).toISOString();
+<!-- 앱 메인 화면 -->
+<div id="app-screen">
+  <header class="app-header">
+    <div class="app-logo">OKR<span>Matrix</span></div>
+    <div class="header-actions">
+      <span class="user-badge" id="user-email-display"></span>
+      <button class="btn-logout" onclick="handleLogout()">로그아웃</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- OKR 섹션 -->
+    <div id="okr-section-wrap">
+      <div id="okr-section">
+        <div class="okr-section-header">
+          <span class="section-label">🎯 OKR</span>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary btn-sm" onclick="openModal('okr-modal')">+ Objective</button>
+          </div>
+        </div>
+        <div id="okr-list"><div class="okr-empty">아직 Objective가 없어요. 위 버튼으로 추가하세요!</div></div>
+      </div>
+    </div>
+
+    <div class="connector">▼ 연동 — OKR Key Results → Task</div>
+
+    <!-- Task 섹션 -->
+    <div id="task-section">
+      <div class="task-section-header">
+        <span class="section-label">✅ Task</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="task-filters">
+            <button class="filter-btn active" onclick="setFilter('all',this)">전체</button>
+            <button class="filter-btn" onclick="setFilter('todo',this)">할 일</button>
+            <button class="filter-btn" onclick="setFilter('done',this)">완료</button>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('task-modal')">+ Task</button>
+        </div>
+      </div>
+      <div class="em-grid" id="em-grid">
+        <div class="em-quadrant em-q1">
+          <div class="em-header"><span class="em-badge em-q1">Q1</span><div><div class="em-title">긴급 + 중요</div><div class="em-subtitle">지금 바로 처리</div></div></div>
+          <div class="task-items" id="q1-items"></div>
+        </div>
+        <div class="em-quadrant em-q2">
+          <div class="em-header"><span class="em-badge em-q2">Q2</span><div><div class="em-title">중요 + 여유</div><div class="em-subtitle">계획하여 실행</div></div></div>
+          <div class="task-items" id="q2-items"></div>
+        </div>
+        <div class="em-quadrant em-q3">
+          <div class="em-header"><span class="em-badge em-q3">Q3</span><div><div class="em-title">긴급 + 덜 중요</div><div class="em-subtitle">위임 검토</div></div></div>
+          <div class="task-items" id="q3-items"></div>
+        </div>
+        <div class="em-quadrant em-q4">
+          <div class="em-header"><span class="em-badge em-q4">Q4</span><div><div class="em-title">여유 + 덜 중요</div><div class="em-subtitle">제거 검토</div></div></div>
+          <div class="task-items" id="q4-items"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <span id="save-status" class="save-status save-saved">✓ 저장됨</span>
+    <span id="footer-count">Task 0개</span>
+  </footer>
+</div>
+
+<!-- Objective 모달 -->
+<div class="modal-overlay" id="okr-modal">
+  <div class="modal-dialog">
+    <button class="modal-close-btn" onclick="closeModal('okr-modal')">✕</button>
+    <div class="modal-title" id="okr-modal-title">새 Objective 추가</div>
+    <div class="form-group">
+      <label class="form-label">Objective (목표)</label>
+      <input type="text" id="okr-title-input" class="form-control" placeholder="예: 상반기 HR AX 성과 달성" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">설명 (선택)</label>
+      <textarea id="okr-desc-input" class="form-control" placeholder="목표에 대한 간단한 설명"></textarea>
+    </div>
+    <div style="margin-bottom:18px;">
+      <div style="font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:8px;">Key Results</div>
+      <div id="kr-inputs"></div>
+      <button class="btn-ghost-sm" onclick="addKRInput()">+ KR 추가</button>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="saveObjective()">저장</button>
+  </div>
+</div>
+
+<!-- Task 모달 -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal-dialog">
+    <button class="modal-close-btn" onclick="closeModal('task-modal')">✕</button>
+    <div class="modal-title">새 Task 추가</div>
+    <div class="form-group">
+      <label class="form-label">Task 제목</label>
+      <input type="text" id="task-title-input" class="form-control" placeholder="예: AI 설문 분석 초안 작성" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">연결할 Key Result</label>
+      <select id="task-kr-select" class="form-control">
+        <option value="">— KR 없음 (운영업무) —</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">아이젠하워 분류</label>
+      <select id="task-em-select" class="form-control">
+        <option value="q1">Q1 — 긴급 + 중요 (지금 처리)</option>
+        <option value="q2">Q2 — 중요 + 여유 (계획 실행)</option>
+        <option value="q3">Q3 — 긴급 + 덜 중요 (위임 검토)</option>
+        <option value="q4" selected>Q4 — 여유 + 덜 중요 (제거 검토)</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="saveTask()">저장</button>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ── Supabase 초기화 ──
+const SUPABASE_URL = 'https://uvpyfjvsurqlbgawlbyk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_dsZHPZ27WP3clb77CLRiew_PUXGqyWo';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── 상태 ──
+let currentUser = null;
+let objectives = [];
+let keyResults = [];
+let tasks = [];
+let currentFilter = 'all';
+let editingObjId = null;
+
+// ── 초기화 ──
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    currentUser = session.user;
+    showApp();
+  } else {
+    showAuth();
+  }
+  sb.auth.onAuthStateChange((_event, session) => {
+    if (session?.user) { currentUser = session.user; showApp(); }
+    else { currentUser = null; showAuth(); }
+  });
 }
 
-// src/utils/storage.ts
-var KEY_PREFIX = "okr-matrix-v2";
-var VERSION = 2;
-function getCurrentUser() {
-  return new URLSearchParams(window.location.search).get("user") || "";
-}
-function getStorageKey(user) {
-  const u = user ?? getCurrentUser();
-  return u ? `${KEY_PREFIX}:${u}` : KEY_PREFIX;
-}
-function defaultState() {
-  return { okr: null, keyResults: {}, tasks: {}, subTasks: {}, activeTaskTab: "active" };
-}
-function loadState(user) {
-  try {
-    const raw = localStorage.getItem(getStorageKey(user));
-    if (!raw) return defaultState();
-    const parsed = JSON.parse(raw);
-    if (!isStorageData(parsed) || parsed.version !== VERSION) return defaultState();
-    return parsed.state;
-  } catch {
-    return defaultState();
-  }
-}
-function saveState(state, user) {
-  const data = { version: VERSION, state, savedAt: (/* @__PURE__ */ new Date()).toISOString() };
-  localStorage.setItem(getStorageKey(user), JSON.stringify(data));
-}
-function isStorageData(v) {
-  return typeof v === "object" && v !== null && "version" in v && "state" in v;
-}
-var _saveTimer = null;
-function debouncedSave(state) {
-  if (_saveTimer !== null) clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(() => {
-    saveState(state);
-    _saveTimer = null;
-  }, 800);
+function showAuth() {
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app-screen').classList.remove('visible');
 }
 
-// src/models/store.ts
-var Store = class {
-  constructor() {
-    this.listeners = [];
-    /** 완료 판정 캐시 (성능 최적화): key = `${taskId}-${updatedAt}` */
-    this.completionCache = /* @__PURE__ */ new Map();
-    /** 캐시 타임스탬프: 주기적 정리용 */
-    this.cacheTimestamps = /* @__PURE__ */ new Map();
-    this.cacheHits = 0;
-    this.cacheMisses = 0;
-    this.state = loadState();
-    this.migrateData();
-    this.setupCacheCleanup();
-  }
-  getState() {
-    return this.state;
-  }
-  /** 다른 user 의 OKR 데이터로 재로드 (postMessage OKR_USER_CHANGE 수신 시 사용) */
-  reload(user) {
-    this.state = loadState(user);
-    this.migrateData();
-    for (const l of this.listeners) l(this.state);
-  }
-  /**
-   * hr_shared_tasks 의 공유 task 를 현재 user 의 OKR state 에 반영.
-   * 신규 생성·KR 연결·재배분 KR 이동까지 처리.
-   */
-  syncSharedTask(taskId) {
-    const raw = localStorage.getItem("hr_shared_tasks");
-    if (!raw) return;
-    try {
-      const shared = JSON.parse(raw);
-      const entry = shared[taskId];
-      if (!entry) return;
-      const currentUser = getCurrentUser();
-      const myAssign = entry.assignees?.find((a) => a.assignee === currentUser);
-      if (!myAssign?.kr_id) return;
-      const krId = myAssign.kr_id;
-      const kr = this.state.keyResults[krId];
-      if (!kr) return;
-      const now = nowISO();
-      const existing = this.state.tasks[taskId];
-      const task = existing ? {
-        ...existing,
-        krId,
-        krNo: kr.krNo,
-        title: entry.title ?? existing.title,
-        memo: entry.memo ?? existing.memo,
-        updatedAt: now
-      } : {
-        id: taskId,
-        krId,
-        krNo: kr.krNo,
-        title: entry.title ?? "",
-        memo: entry.memo ?? "",
-        subTasks: [],
-        isOperational: !!entry.is_operational,
-        createdAt: entry.created_at ?? now,
-        updatedAt: now
-      };
-      const newKRs = { ...this.state.keyResults };
-      if (existing && existing.krId !== null && existing.krId !== krId) {
-        const oldKR = newKRs[existing.krId];
-        if (oldKR) newKRs[existing.krId] = { ...oldKR, tasks: oldKR.tasks.filter((id) => id !== taskId) };
-      }
-      if (!kr.tasks.includes(taskId)) {
-        newKRs[krId] = { ...kr, tasks: [...kr.tasks, taskId] };
-      }
-      let newOKR = this.state.okr;
-      if (newOKR) {
-        const order = newOKR.taskDisplayOrder ?? [];
-        if (!order.includes(taskId)) {
-          newOKR = { ...newOKR, taskDisplayOrder: [...order, taskId] };
-        }
-      }
-      this.commit({
-        ...this.state,
-        tasks: { ...this.state.tasks, [taskId]: task },
-        keyResults: newKRs,
-        okr: newOKR
-      });
-    } catch {
-    }
-  }
-  subscribe(fn) {
-    this.listeners.push(fn);
-    return () => {
-      this.listeners = this.listeners.filter((l) => l !== fn);
-    };
-  }
-  commit(next) {
-    this.state = next;
-    debouncedSave(next);
-    for (const l of this.listeners) l(next);
-  }
-  // ───────────────── OKR ─────────────────
-  setObjective(text) {
-    const now = nowISO();
-    const okr = this.state.okr ? { ...this.state.okr, objective: text, updatedAt: now } : { id: uid("okr"), objective: text, keyResults: [], createdAt: now, updatedAt: now };
-    this.commit({ ...this.state, okr });
-  }
-  // ───────────────── Key Results ─────────────────
-  addKR(payload) {
-    const okr = this.state.okr;
-    if (!okr) throw new Error("No OKR yet");
-    const krNo = okr.keyResults.length + 1;
-    const kr = {
-      id: uid("kr"),
-      okrId: okr.id,
-      krNo,
-      title: payload.title,
-      progress: 0,
-      tasks: [],
-      order: okr.keyResults.length
-      // 0-based, 마지막에 추가
-    };
-    const updatedOKR = { ...okr, keyResults: [...okr.keyResults, kr.id], updatedAt: nowISO() };
-    this.commit({
-      ...this.state,
-      okr: updatedOKR,
-      keyResults: { ...this.state.keyResults, [kr.id]: kr }
-    });
-    return kr;
-  }
-  updateKR(krId, changes) {
-    const kr = this.state.keyResults[krId];
-    if (!kr) return;
-    this.commit({ ...this.state, keyResults: { ...this.state.keyResults, [krId]: { ...kr, ...changes } } });
-  }
-  deleteKR(krId) {
-    const kr = this.state.keyResults[krId];
-    if (!kr) return;
-    const newTasks = { ...this.state.tasks };
-    const newSubTasks = { ...this.state.subTasks };
-    for (const tId of kr.tasks) {
-      const t = newTasks[tId];
-      if (t) {
-        for (const sId of t.subTasks) delete newSubTasks[sId];
-      }
-      delete newTasks[tId];
-    }
-    const newKRs = { ...this.state.keyResults };
-    delete newKRs[krId];
-    const deletedTaskIds = new Set(kr.tasks);
-    let updatedOKR = this.state.okr ? { ...this.state.okr, keyResults: this.state.okr.keyResults.filter((id) => id !== krId) } : null;
-    if (updatedOKR?.taskDisplayOrder) {
-      updatedOKR = { ...updatedOKR, taskDisplayOrder: updatedOKR.taskDisplayOrder.filter((id) => !deletedTaskIds.has(id)) };
-    }
-    this.commit({ ...this.state, okr: updatedOKR, keyResults: newKRs, tasks: newTasks, subTasks: newSubTasks });
-  }
-  // ───────────────── Tasks ─────────────────
-  addTask(payload) {
-    const now = nowISO();
-    const isOperational = payload.isOperational ?? false;
-    let krNo = 0;
-    const task = {
-      id: uid("task"),
-      krId: payload.krId,
-      krNo,
-      title: payload.title,
-      subTasks: [],
-      memo: payload.memo ?? "",
-      isOperational,
-      createdAt: now,
-      updatedAt: now
-    };
-    const newTasks = { ...this.state.tasks, [task.id]: task };
-    const newKRs = { ...this.state.keyResults };
-    if (payload.krId !== null) {
-      const kr = newKRs[payload.krId];
-      if (!kr) throw new Error(`KR not found: ${payload.krId}`);
-      task.krNo = kr.krNo;
-      newKRs[kr.id] = { ...kr, tasks: [...kr.tasks, task.id] };
-    }
-    let newOKR = this.state.okr;
-    if (newOKR && !isOperational && payload.krId !== null && newOKR.taskDisplayOrder) {
-      newOKR = { ...newOKR, taskDisplayOrder: [...newOKR.taskDisplayOrder, task.id] };
-    }
-    this.commit({ ...this.state, tasks: newTasks, keyResults: newKRs, okr: newOKR });
-    return task;
-  }
-  updateTask(taskId, changes) {
-    const task = this.state.tasks[taskId];
-    if (!task) return;
-    this.invalidateTaskCache(taskId);
-    let newKRs = { ...this.state.keyResults };
-    const extraChanges = {};
-    if ("krId" in changes && changes.krId !== task.krId) {
-      if (task.krId !== null) {
-        const oldKR = newKRs[task.krId];
-        if (oldKR) {
-          newKRs[task.krId] = { ...oldKR, tasks: oldKR.tasks.filter((id) => id !== taskId) };
-        }
-      }
-      const newKrId = changes.krId ?? null;
-      if (newKrId !== null) {
-        const newKR = newKRs[newKrId];
-        if (newKR) {
-          newKRs[newKrId] = { ...newKR, tasks: [...newKR.tasks, taskId] };
-          extraChanges.krNo = newKR.krNo;
-        }
-      } else {
-        extraChanges.krNo = 0;
-      }
-    }
-    this.commit({
-      ...this.state,
-      tasks: {
-        ...this.state.tasks,
-        [taskId]: { ...task, ...changes, ...extraChanges, updatedAt: nowISO() }
-      },
-      keyResults: newKRs
-    });
-  }
-  deleteTask(taskId) {
-    const task = this.state.tasks[taskId];
-    if (!task) return;
-    this.invalidateTaskCache(taskId);
-    const newSubTasks = { ...this.state.subTasks };
-    for (const sId of task.subTasks) delete newSubTasks[sId];
-    const newTasks = { ...this.state.tasks };
-    delete newTasks[taskId];
-    const newKRs = { ...this.state.keyResults };
-    if (task.krId !== null) {
-      const kr = newKRs[task.krId];
-      if (kr) {
-        newKRs[kr.id] = { ...kr, tasks: kr.tasks.filter((id) => id !== taskId) };
-      }
-    }
-    let taskDeletedOKR = this.state.okr;
-    if (taskDeletedOKR?.taskDisplayOrder) {
-      taskDeletedOKR = { ...taskDeletedOKR, taskDisplayOrder: taskDeletedOKR.taskDisplayOrder.filter((id) => id !== taskId) };
-    }
-    this.commit({ ...this.state, tasks: newTasks, subTasks: newSubTasks, keyResults: newKRs, okr: taskDeletedOKR });
-  }
-  // ───────────────── SubTasks ─────────────────
-  addSubTask(payload) {
-    const task = this.state.tasks[payload.taskId];
-    if (!task) throw new Error(`Task not found: ${payload.taskId}`);
-    const st = {
-      id: uid("st"),
-      taskId: payload.taskId,
-      title: payload.title,
-      emQuadrant: payload.emQuadrant,
-      order: task.subTasks.length,
-      startDate: payload.startDate,
-      dueDate: payload.dueDate,
-      isCompleted: false
-    };
-    const updatedTask = { ...task, subTasks: [...task.subTasks, st.id] };
-    const newState = {
-      ...this.state,
-      tasks: { ...this.state.tasks, [task.id]: updatedTask },
-      subTasks: { ...this.state.subTasks, [st.id]: st }
-    };
-    this.invalidateTaskCache(task.id);
-    this.commit(this._recalcKR(newState, task.krId));
-    return st;
-  }
-  updateSubTask(stId, payload) {
-    const st = this.state.subTasks[stId];
-    if (!st) return;
-    const updated = { ...st, ...payload };
-    const newState = { ...this.state, subTasks: { ...this.state.subTasks, [stId]: updated } };
-    const task = this.state.tasks[st.taskId];
-    if (task) this.invalidateTaskCache(task.id);
-    this.commit(task ? this._recalcKR(newState, task.krId) : newState);
-  }
-  toggleSubTask(stId) {
-    const st = this.state.subTasks[stId];
-    if (!st) return;
-    this.updateSubTask(stId, { isCompleted: !st.isCompleted });
-  }
-  deleteSubTask(stId) {
-    const st = this.state.subTasks[stId];
-    if (!st) return;
-    const task = this.state.tasks[st.taskId];
-    const newSubTasks = { ...this.state.subTasks };
-    delete newSubTasks[stId];
-    const newTasks = { ...this.state.tasks };
-    if (task) {
-      newTasks[task.id] = { ...task, subTasks: task.subTasks.filter((id) => id !== stId) };
-      this.invalidateTaskCache(task.id);
-    }
-    const newState = { ...this.state, subTasks: newSubTasks, tasks: newTasks };
-    this.commit(task ? this._recalcKR(newState, task.krId) : newState);
-  }
-  reorderTaskDisplay(orderedIds) {
-    const okr = this.state.okr;
-    if (!okr) return;
-    this.commit({ ...this.state, okr: { ...okr, taskDisplayOrder: orderedIds } });
-  }
-  reorderKRs(orderedIds) {
-    const okr = this.state.okr;
-    if (!okr) return;
-    const newOKR = { ...okr, keyResults: orderedIds, updatedAt: nowISO() };
-    const newKRs = { ...this.state.keyResults };
-    orderedIds.forEach((id, i) => {
-      const kr = newKRs[id];
-      if (kr) newKRs[id] = { ...kr, order: i };
-    });
-    this.commit({ ...this.state, okr: newOKR, keyResults: newKRs });
-  }
-  reorderTasks(krId, orderedIds) {
-    const kr = this.state.keyResults[krId];
-    if (!kr) return;
-    const updatedKR = { ...kr, tasks: orderedIds };
-    this.commit({
-      ...this.state,
-      keyResults: { ...this.state.keyResults, [krId]: updatedKR }
-    });
-  }
-  reorderSubTasks(taskId, orderedIds) {
-    const newSubTasks = { ...this.state.subTasks };
-    orderedIds.forEach((id, i) => {
-      const st = newSubTasks[id];
-      if (st) newSubTasks[id] = { ...st, order: i };
-    });
-    const task = this.state.tasks[taskId];
-    const newTasks = task ? { ...this.state.tasks, [taskId]: { ...task, subTasks: orderedIds } } : this.state.tasks;
-    this.commit({ ...this.state, subTasks: newSubTasks, tasks: newTasks });
-  }
-  // ───────────────── 완료 판정 ─────────────────
-  /**
-   * Task 완료 여부 판정
-   *
-   * 완료 조건: 해당 Task 내 SubTask가 1개 이상 존재하며 전부 완료 상태
-   * (Task 레벨 날짜는 판정에 영향 없음)
-   */
-  isTaskCompleted(task) {
-    const cacheKey = `${task.id}-${task.updatedAt}`;
-    const cached = this.completionCache.get(cacheKey);
-    if (cached !== void 0) {
-      this.cacheHits++;
-      return cached;
-    }
-    this.cacheMisses++;
-    const result = task.subTasks.length > 0 && task.subTasks.every((stId) => {
-      const st = this.state.subTasks[stId];
-      return st?.isCompleted ?? false;
-    });
-    this.completionCache.set(cacheKey, result);
-    this.cacheTimestamps.set(cacheKey, Date.now());
-    return result;
-  }
-  /**
-   * Task 캐시 무효화 — SubTask 변경 시 호출
-   */
-  invalidateTaskCache(taskId) {
-    const prefix = taskId + "-";
-    const toDelete = [];
-    this.completionCache.forEach((_, key) => {
-      if (key.startsWith(prefix)) toDelete.push(key);
-    });
-    toDelete.forEach((k) => {
-      this.completionCache.delete(k);
-      this.cacheTimestamps.delete(k);
-    });
-  }
-  /**
-   * 캐시 통계 반환 (디버깅용)
-   */
-  getCacheStats() {
-    return { hits: this.cacheHits, misses: this.cacheMisses, size: this.completionCache.size };
-  }
-  /**
-   * 주기적 캐시 정리 (5분 이상 경과한 항목 제거)
-   */
-  setupCacheCleanup() {
-    setInterval(() => {
-      const maxAge = 5 * 60 * 1e3;
-      const now = Date.now();
-      this.cacheTimestamps.forEach((ts, key) => {
-        if (now - ts > maxAge) {
-          this.completionCache.delete(key);
-          this.cacheTimestamps.delete(key);
-        }
-      });
-    }, 60 * 1e3);
-  }
-  // ───────────────── 탭 필터링 ─────────────────
-  /**
-   * 현재 탭에 해당하는 Task 목록 반환
-   */
-  getTasksByTab(tab) {
-    return Object.values(this.state.tasks).filter((task) => {
-      const isCompleted = this.isTaskCompleted(task);
-      return tab === "completed" ? isCompleted : !isCompleted;
-    });
-  }
-  /**
-   * 특정 KR에 속한 Task 목록 (탭 필터 적용)
-   */
-  getTasksByKrAndTab(krId, tab) {
-    return this.getTasksByTab(tab).filter((task) => task.krId === krId);
-  }
-  /**
-   * 운영 업무 목록 (탭 필터 적용)
-   */
-  getOperationalTasks(tab) {
-    return this.getTasksByTab(tab).filter((task) => task.isOperational);
-  }
-  /**
-   * Task 완료 상태 상세 정보 (UI 표시 / 디버깅용)
-   *
-   * reason:
-   * - 'missing_subtasks'   : SubTask가 없음
-   * - 'incomplete_subtasks': 미완료 SubTask 존재
-   * - 'all_subtasks_done'  : 완료
-   */
-  getCompletionStatus(task) {
-    if (task.subTasks.length === 0) {
-      return { isCompleted: false, reason: "missing_subtasks", missingFields: ["SubTask\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4"] };
-    }
-    const incompleteCnt = task.subTasks.filter((stId) => {
-      const st = this.state.subTasks[stId];
-      return st ? !st.isCompleted : false;
-    }).length;
-    if (incompleteCnt > 0) {
-      return {
-        isCompleted: false,
-        reason: "incomplete_subtasks",
-        missingFields: [`\uBBF8\uC644\uB8CC SubTask: ${incompleteCnt}\uAC1C`]
-      };
-    }
-    return { isCompleted: true, reason: "all_subtasks_done", missingFields: [] };
-  }
-  /**
-   * 탭별로 KR-id → Task[] 그룹핑 (KR 연결 Task만, 운영 업무 제외)
-   */
-  getGroupedTasks(tab) {
-    const grouped = /* @__PURE__ */ new Map();
-    for (const task of this.getTasksByTab(tab)) {
-      if (task.isOperational || task.krId === null) continue;
-      const krId = task.krId;
-      const list = grouped.get(krId) ?? [];
-      list.push(task);
-      grouped.set(krId, list);
-    }
-    return grouped;
-  }
-  // ───────────────── KR 순서 관리 ─────────────────
-  /**
-   * 특정 OKR의 KR 목록 (order 순서대로)
-   */
-  getKRsByObjective(okrId) {
-    return Object.values(this.state.keyResults).filter((kr) => kr.okrId === okrId).sort((a, b) => a.order - b.order);
-  }
-  // ───────────────── 탭 상태 관리 ─────────────────
-  setActiveTaskTab(tab) {
-    this.commit({ ...this.state, activeTaskTab: tab });
-  }
-  getActiveTaskTab() {
-    return this.state.activeTaskTab;
-  }
-  // ───────────────── 마이그레이션 ─────────────────
-  /**
-   * v1.0 → v1.1 데이터 마이그레이션
-   * 앱 초기화 시 실행 — 기존 데이터에 신규 필드 기본값 적용
-   */
-  migrateData() {
-    let needsPersist = false;
-    const newTasks = { ...this.state.tasks };
-    for (const [id, task] of Object.entries(newTasks)) {
-      const updates = {};
-      if (task.isOperational === void 0) {
-        updates.isOperational = false;
-        needsPersist = true;
-      }
-      if (!task.updatedAt) {
-        updates.updatedAt = task.createdAt;
-        needsPersist = true;
-      }
-      if (Object.keys(updates).length > 0) {
-        newTasks[id] = { ...task, ...updates };
-      }
-    }
-    const newKRs = { ...this.state.keyResults };
-    const okr = this.state.okr;
-    if (okr) {
-      okr.keyResults.forEach((krId, index) => {
-        const kr = newKRs[krId];
-        if (kr && kr.order === void 0) {
-          newKRs[krId] = { ...kr, order: index };
-          needsPersist = true;
-        }
-      });
-    }
-    const currentTab = this.state.activeTaskTab;
-    const activeTaskTab = currentTab ?? "active";
-    if (!currentTab) needsPersist = true;
-    if (needsPersist) {
-      this.state = { ...this.state, tasks: newTasks, keyResults: newKRs, activeTaskTab };
-      debouncedSave(this.state);
-    }
-  }
-  // ───────────────── Internal helpers ─────────────────
-  /** Recalculate KR progress based on all sub-task completions under that KR */
-  _recalcKR(state, krId) {
-    if (krId === null) return state;
-    const kr = state.keyResults[krId];
-    if (!kr) return state;
-    let total = 0, done = 0;
-    for (const tId of kr.tasks) {
-      const t = state.tasks[tId];
-      if (!t) continue;
-      for (const sId of t.subTasks) {
-        const s = state.subTasks[sId];
-        if (!s) continue;
-        total++;
-        if (s.isCompleted) done++;
-      }
-    }
-    const progress = total === 0 ? 0 : Math.round(done / total * 100);
-    return { ...state, keyResults: { ...state.keyResults, [krId]: { ...kr, progress } } };
-  }
-  // ───────────────── Team Sync (OBJECTIVE/KR 공유) ─────────────────
-  _getTeamMembers() {
-    try {
-      return JSON.parse(localStorage.getItem("hr_team_members") || "[]").filter(Boolean);
-    } catch {
-      return [];
-    }
-  }
-  listOtherTeamMembers() {
-    const me = getCurrentUser();
-    return this._getTeamMembers().filter((m) => m !== me);
-  }
-  loadUserState(user) {
-    return loadState(user);
-  }
-  hasAnyTeamObjective() {
-    const me = getCurrentUser();
-    if (this.state.okr?.objective && this.state.okr.objective.trim()) return true;
-    for (const u of this._getTeamMembers()) {
-      if (u === me) continue;
-      try {
-        const st = loadState(u);
-        if (st.okr?.objective && st.okr.objective.trim()) return true;
-      } catch {}
-    }
-    return false;
-  }
-  setObjectiveForAll(text) {
-    const me = getCurrentUser();
-    const members = this._getTeamMembers();
-    const allUsers = members.length ? Array.from(new Set([me, ...members])).filter(Boolean) : [me].filter(Boolean);
-    const now = nowISO();
-    for (const u of allUsers) {
-      try {
-        const st = u === me ? this.state : loadState(u);
-        const okr = st.okr
-          ? { ...st.okr, objective: text, updatedAt: now }
-          : { id: uid("okr"), objective: text, keyResults: [], createdAt: now, updatedAt: now };
-        const nextState = { ...st, okr };
-        if (u === me) {
-          this.commit(nextState);
-        } else {
-          saveState(nextState, u);
-        }
-      } catch (err) {
-        console.warn("setObjectiveForAll: failed for user", u, err);
-      }
-    }
-  }
-  importKRsFromUser(fromUser, krIds) {
-    const src = loadState(fromUser);
-    if (!src.okr || !krIds || krIds.length === 0) return { added: 0 };
-    const now = nowISO();
-    let okr = this.state.okr;
-    if (!okr) {
-      okr = { id: uid("okr"), objective: src.okr.objective || "", keyResults: [], createdAt: now, updatedAt: now };
-    }
-    const newKRs = { ...this.state.keyResults };
-    const newTasks = { ...this.state.tasks };
-    const newSubTasks = { ...this.state.subTasks };
-    let krOrder = okr.keyResults.length;
-    let krNo = okr.keyResults.length;
-    const addedKrIds = [];
-    for (const srcKrId of krIds) {
-      const srcKr = src.keyResults[srcKrId];
-      if (!srcKr) continue;
-      const newKrId = uid("kr");
-      krNo += 1;
-      const newKrTaskIds = [];
-      for (const srcTaskId of srcKr.tasks || []) {
-        const srcTask = src.tasks[srcTaskId];
-        if (!srcTask) continue;
-        const newTaskId = uid("task");
-        const newSubTaskIds = [];
-        for (const srcStId of srcTask.subTasks || []) {
-          const srcSt = src.subTasks[srcStId];
-          if (!srcSt) continue;
-          const newStId = uid("st");
-          newSubTasks[newStId] = { ...srcSt, id: newStId, taskId: newTaskId, createdAt: now, updatedAt: now };
-          newSubTaskIds.push(newStId);
-        }
-        newTasks[newTaskId] = { ...srcTask, id: newTaskId, krId: newKrId, krNo, subTasks: newSubTaskIds, createdAt: now, updatedAt: now };
-        newKrTaskIds.push(newTaskId);
-      }
-      newKRs[newKrId] = { ...srcKr, id: newKrId, okrId: okr.id, krNo, tasks: newKrTaskIds, order: krOrder++, createdAt: now, updatedAt: now };
-      addedKrIds.push(newKrId);
-    }
-    if (addedKrIds.length === 0) return { added: 0 };
-    const updatedOKR = { ...okr, keyResults: [...okr.keyResults, ...addedKrIds], updatedAt: now };
-    this.commit({ ...this.state, okr: updatedOKR, keyResults: newKRs, tasks: newTasks, subTasks: newSubTasks });
-    return { added: addedKrIds.length };
-  }
-};
-
-// src/views/OKRSection.ts
-function computeNewOrder(tbody, draggingId, sortedIds) {
-  let insertAtIndex = 0;
-  let foundPlaceholder = false;
-  for (const child of [...tbody.children]) {
-    if (child.classList.contains("kr-placeholder")) {
-      foundPlaceholder = true;
-      break;
-    }
-    if (child.classList.contains("kr-row") && !child.classList.contains("dragging")) {
-      insertAtIndex++;
-    }
-  }
-  if (!foundPlaceholder) return null;
-  const otherIds = sortedIds.filter((id) => id !== draggingId);
-  otherIds.splice(insertAtIndex, 0, draggingId);
-  if (otherIds.join(",") === sortedIds.join(",")) return null;
-  return otherIds;
+async function showApp() {
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').classList.add('visible');
+  document.getElementById('user-email-display').textContent = currentUser.email;
+  await loadAll();
+  subscribeRealtime();
 }
-var OKRSection = class {
-  constructor(root, events) {
-    this.activeKRId = null;
-    this.isKRCollapsed = false;
-    this.krDrag = null;
-    this._krPlaceholder = null;
-    this.root = root;
-    this.events = events;
-  }
-  setActiveKR(krId) {
-    this.activeKRId = krId;
-  }
-  render(state) {
-    clearEl(this.root);
-    const header = el("div", ["okr-section-header"]);
-    const titleRow = el("div", ["okr-title-row"]);
-    const sectionLabel = el("h2", ["section-label"]);
-    sectionLabel.textContent = "OKR";
-    const addBtn = el("button", ["btn", "btn-primary", "btn-sm"]);
-    addBtn.textContent = "+ OKR \uCD94\uAC00";
-    addBtn.addEventListener("click", () => this.events.onEditObjective());
-    titleRow.append(sectionLabel, addBtn);
-    if (state.okr) {
-      const collapseBtn = el("button", ["okr-collapse-btn"]);
-      collapseBtn.textContent = this.isKRCollapsed ? "\u25B3" : "\u25BD";
-      collapseBtn.addEventListener("click", () => {
-        this.isKRCollapsed = !this.isKRCollapsed;
-        this.render(state);
-      });
-      titleRow.append(collapseBtn);
-    }
-    header.append(titleRow);
-    this.root.append(header);
-    if (!state.okr) {
-      const empty = el("div", ["okr-empty"]);
-      empty.textContent = "OKR\uC774 \uC5C6\uC2B5\uB2C8\uB2E4. OKR \uCD94\uAC00 \uBC84\uD2BC\uC73C\uB85C \uC2DC\uC791\uD558\uC138\uC694.";
-      this.root.append(empty);
-      return;
-    }
-    const objCard = el("div", ["objective-card"]);
-    const objLabel = el("span", ["objective-label"]);
-    objLabel.textContent = "Objective";
-    const objText = el("p", ["objective-text"]);
-    objText.textContent = state.okr.objective;
-    const objEdit = el("button", ["btn-icon"], { title: "Objective \uD3B8\uC9D1", "aria-label": "Objective \uD3B8\uC9D1" });
-    objEdit.innerHTML = "\u270F\uFE0F";
-    objEdit.addEventListener("click", () => this.events.onEditObjective());
-    objCard.append(objLabel, objText, objEdit);
-    this.root.append(objCard);
-    if (this.isKRCollapsed) return;
-    const tableWrap = el("div", ["kr-table-wrap"]);
-    const table = el("table", ["kr-table"]);
-    table.setAttribute("role", "table");
-    table.setAttribute("aria-label", "Key Results");
-    const thead = el("thead");
-    const headRow = el("tr");
-    ["", "KR no.", "Key Results", "\uC9C4\uD589\uB960", ""].forEach((col) => {
-      const th = el("th");
-      th.textContent = col;
-      headRow.append(th);
-    });
-    thead.append(headRow);
-    table.append(thead);
-    const tbody = el("tbody");
-    const sortedKRs = state.okr.keyResults.map((id) => state.keyResults[id]).filter((kr) => kr !== void 0).sort((a, b) => a.order - b.order);
-    for (const kr of sortedKRs) {
-      const row = el("tr", ["kr-row", kr.id === this.activeKRId ? "kr-active" : ""]);
-      row.setAttribute("data-kr-id", kr.id);
-      const tdHandle = el("td", ["kr-drag-handle"]);
-      tdHandle.setAttribute("draggable", "true");
-      tdHandle.textContent = "\u283F";
-      tdHandle.addEventListener("dragstart", (e) => {
-        e.stopPropagation();
-        this.krDrag = { krId: kr.id };
-        row.classList.add("dragging");
-        if (e.dataTransfer) {
-          e.dataTransfer.effectAllowed = "move";
-          e.dataTransfer.setData("text/plain", kr.id);
-        }
-        const ph = el("tr", ["kr-placeholder"]);
-        const phTd = el("td", [], { colspan: "5" });
-        ph.append(phTd);
-        this._krPlaceholder = ph;
-      });
-      tdHandle.addEventListener("dragend", () => {
-        row.classList.remove("dragging");
-        this.krDrag = null;
-        if (this._krPlaceholder) {
-          this._krPlaceholder.remove();
-          this._krPlaceholder = null;
-        }
-        this.root.querySelectorAll(".drop-above, .drop-below").forEach((el2) => {
-          el2.classList.remove("drop-above", "drop-below");
-        });
-      });
-      row.addEventListener("click", () => {
-        const next = this.activeKRId === kr.id ? null : kr.id;
-        this.events.onKRClick(next);
-      });
-      const tdNo = el("td", ["kr-no-cell"]);
-      const noBadge = el("span", ["kr-no-badge"]);
-      noBadge.textContent = String(kr.krNo);
-      tdNo.append(noBadge);
-      const tdTitle = el("td", ["kr-title-cell"]);
-      tdTitle.textContent = kr.title;
-      const tdProgress = el("td", ["kr-progress-cell"]);
-      const barWrap = el("div", ["kr-progress-bar-wrap"]);
-      const bar = el("div", ["kr-progress-bar"]);
-      const fill = el("div", ["kr-progress-fill"]);
-      fill.style.width = `${kr.progress}%`;
-      const pLabel = el("span", ["kr-progress-label"]);
-      pLabel.textContent = `${kr.progress}%`;
-      bar.append(fill);
-      barWrap.append(bar, pLabel);
-      tdProgress.append(barWrap);
-      const tdAct = el("td", ["kr-action-cell"]);
-      const editBtn = el("button", ["btn-icon", "kr-edit-btn"], { title: "KR \uD3B8\uC9D1" });
-      editBtn.textContent = "\u270F\uFE0F";
-      editBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.events.onEditKR(kr.id);
-      });
-      const delBtn = el("button", ["btn-icon", "kr-del-btn"], { title: "KR \uC0AD\uC81C" });
-      delBtn.textContent = "\u{1F5D1}\uFE0F";
-      delBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.events.onDeleteKR(kr.id);
-      });
-      tdAct.append(editBtn, delBtn);
-      row.append(tdHandle, tdNo, tdTitle, tdProgress, tdAct);
-      tbody.append(row);
-    }
-    tbody.addEventListener("dragover", (e) => {
-      if (!this.krDrag || !this._krPlaceholder) return;
-      e.preventDefault();
-      const krRows = [
-        ...tbody.querySelectorAll("tr.kr-row:not(.dragging)")
-      ];
-      let insertBeforeEl = null;
-      for (const r of krRows) {
-        const rect = r.getBoundingClientRect();
-        if (e.clientY < rect.top + rect.height / 2) {
-          insertBeforeEl = r;
-          break;
-        }
-      }
-      if (insertBeforeEl) {
-        tbody.insertBefore(this._krPlaceholder, insertBeforeEl);
-      } else {
-        const addRowEl = tbody.querySelector(".kr-add-row");
-        if (addRowEl) tbody.insertBefore(this._krPlaceholder, addRowEl);
-        else tbody.appendChild(this._krPlaceholder);
-      }
-    });
-    tbody.addEventListener("drop", (e) => {
-      e.preventDefault();
-      if (!this.krDrag || !this._krPlaceholder) return;
-      const newOrder = computeNewOrder(
-        tbody,
-        this.krDrag.krId,
-        sortedKRs.map((k) => k.id)
-      );
-      if (newOrder) {
-        this.events.onReorderKRs(newOrder);
-      }
-    });
-    const addRow = el("tr", ["kr-add-row"]);
-    const addTd = el("td", ["kr-add-td"]);
-    addTd.setAttribute("colspan", "5");
-    const addKRBtn = el("button", ["btn-add-kr"]);
-    addKRBtn.textContent = "[+] KR \uCD94\uAC00";
-    addKRBtn.addEventListener("click", () => this.events.onAddKR());
-    addTd.append(addKRBtn);
-    addRow.append(addTd);
-    tbody.append(addRow);
-    table.append(tbody);
-    tableWrap.append(table);
-    this.root.append(tableWrap);
-  }
-};
 
-// src/types/index.ts
-var EM_LABELS = {
-  1: "Q1 \uAE34\uAE09\xB7\uC911\uC694",
-  2: "Q2 \uC911\uC694\xB7\uBE44\uAE34\uAE09",
-  3: "Q3 \uAE34\uAE09\xB7\uBE44\uC911\uC694",
-  4: "Q4 \uC81C\uAC70"
-};
-
-// src/views/TaskSection.ts
-function buildTaskDisplayOrder(state) {
-  if (!state.okr) return [];
-  if (state.okr.taskDisplayOrder && state.okr.taskDisplayOrder.length > 0) {
-    const inOrder = new Set(state.okr.taskDisplayOrder);
-    const result2 = state.okr.taskDisplayOrder.filter((id) => {
-      const t = state.tasks[id];
-      return t !== void 0 && !t.isOperational;
-    });
-    for (const krId of state.okr.keyResults) {
-      const kr = state.keyResults[krId];
-      if (!kr) continue;
-      for (const taskId of kr.tasks) {
-        if (!inOrder.has(taskId)) {
-          const t = state.tasks[taskId];
-          if (t && !t.isOperational) result2.push(taskId);
-        }
-      }
-    }
-    return result2;
-  }
-  const result = [];
-  for (const krId of state.okr.keyResults) {
-    const kr = state.keyResults[krId];
-    if (!kr) continue;
-    for (const taskId of kr.tasks) {
-      const t = state.tasks[taskId];
-      if (t && !t.isOperational) result.push(taskId);
-    }
-  }
-  return result;
+// ── 인증 ──
+let authMode = 'login';
+function switchTab(mode) {
+  authMode = mode;
+  document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
+  document.getElementById('auth-submit-btn').textContent = mode === 'login' ? '로그인' : '회원가입';
+  document.getElementById('signup-notice').style.display = mode === 'signup' ? 'block' : 'none';
+  document.getElementById('auth-error').classList.remove('show');
 }
-function computeTaskOrder(currentOrder, draggingId, targetId, insertBefore) {
-  if (draggingId === targetId) return null;
-  const ids = [...currentOrder];
-  const fromIdx = ids.indexOf(draggingId);
-  if (fromIdx === -1) return null;
-  ids.splice(fromIdx, 1);
-  const toIdx = ids.indexOf(targetId);
-  if (toIdx === -1) return null;
-  ids.splice(insertBefore ? toIdx : toIdx + 1, 0, draggingId);
-  if (ids.join(",") === currentOrder.join(",")) return null;
-  return ids;
+
+async function handleAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.classList.remove('show');
+  if (!email || !password) { errEl.textContent = '이메일과 비밀번호를 입력해주세요.'; errEl.classList.add('show'); return; }
+  const btn = document.getElementById('auth-submit-btn');
+  btn.textContent = '처리 중...'; btn.disabled = true;
+  let error;
+  if (authMode === 'login') {
+    ({ error } = await sb.auth.signInWithPassword({ email, password }));
+  } else {
+    ({ error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: undefined, data: { email_confirm: true } } }));
+    if (!error) { toast('가입 완료! 바로 로그인됩니다.', 'success'); }
+  }
+  if (error) { errEl.textContent = translateError(error.message); errEl.classList.add('show'); }
+  btn.textContent = authMode === 'login' ? '로그인' : '회원가입'; btn.disabled = false;
 }
-var TaskSection = class {
-  constructor(root, events) {
-    this.highlightKRId = null;
-    // D&D state
-    this.stDrag = null;
-    this.taskDrag = null;
-    // Phase 3: 완료 상태 변화 감지용 캐시
-    this._prevCompletionStates = /* @__PURE__ */ new Map();
-    this.root = root;
-    this.events = events;
-  }
-  setHighlightKR(krId) {
-    this.highlightKRId = krId;
-    const rows = this.root.querySelectorAll("tr[data-kr-id]");
-    rows.forEach((row) => {
-      const rowKrId = row.getAttribute("data-kr-id");
-      if (this.highlightKRId === null) {
-        row.classList.remove("row-highlight", "row-dimmed");
-      } else if (rowKrId === this.highlightKRId) {
-        row.classList.add("row-highlight");
-        row.classList.remove("row-dimmed");
-      } else {
-        row.classList.add("row-dimmed");
-        row.classList.remove("row-highlight");
-      }
-    });
-  }
-  render(state) {
-    const completionChanges = [];
-    for (const task of Object.values(state.tasks)) {
-      const prev = this._prevCompletionStates.get(task.id);
-      const curr = this.events.isTaskCompleted(task);
-      if (prev !== void 0 && prev !== curr) {
-        completionChanges.push({ taskTitle: task.title, toCompleted: curr });
-      }
-      this._prevCompletionStates.set(task.id, curr);
-    }
-    for (const id of this._prevCompletionStates.keys()) {
-      if (!state.tasks[id]) this._prevCompletionStates.delete(id);
-    }
-    if (this.events.onTaskCompleted) {
-      for (const change of completionChanges) {
-        this.events.onTaskCompleted(change.taskTitle, change.toCompleted);
-      }
-    }
-    clearEl(this.root);
-    const header = el("div", ["task-section-header"]);
-    const sectionLabel = el("h2", ["section-label"]);
-    sectionLabel.textContent = "TASK";
-    const addBtn = el("button", ["btn", "btn-primary", "btn-sm"]);
-    addBtn.textContent = "+ Task \uCD94\uAC00";
-    addBtn.addEventListener("click", () => this.events.onAddTask());
-    header.append(sectionLabel, addBtn);
-    this.root.append(header);
-    const allTasks = Object.values(state.tasks);
-    const activeCount = allTasks.filter((t) => !this.events.isTaskCompleted(t)).length;
-    const completedCount = allTasks.filter((t) => this.events.isTaskCompleted(t)).length;
-    const tabBar = el("div", ["task-tab-bar"]);
-    ["active", "completed"].forEach((tab) => {
-      const isActive = state.activeTaskTab === tab;
-      const btn = el("button", ["task-tab-btn", isActive ? "active" : ""]);
-      const labelEl = el("span", ["tab-label"]);
-      labelEl.textContent = tab === "active" ? "\uC9C4\uD589\uC911" : "\uC644\uB8CC";
-      const countEl = el("span", ["tab-count"]);
-      countEl.textContent = String(tab === "active" ? activeCount : completedCount);
-      btn.append(labelEl, countEl);
-      btn.addEventListener("click", () => this.events.onTabChange(tab));
-      tabBar.append(btn);
-    });
-    this.root.append(tabBar);
-    const taskDisplayIds = buildTaskDisplayOrder(state);
-    const orderedTasks = taskDisplayIds.map((id) => state.tasks[id]).filter((t) => t !== void 0);
-    const includedIds = new Set(taskDisplayIds);
-    for (const task of Object.values(state.tasks)) {
-      if (!includedIds.has(task.id) && !task.isOperational) orderedTasks.push(task);
-    }
-    const isCompletedTab = state.activeTaskTab === "completed";
-    const filteredMain = orderedTasks.filter(
-      (task) => isCompletedTab ? this.events.isTaskCompleted(task) : !this.events.isTaskCompleted(task)
-    );
-    const filteredOp = Object.values(state.tasks).filter((t) => t.isOperational).filter((t) => isCompletedTab ? this.events.isTaskCompleted(t) : !this.events.isTaskCompleted(t));
-    if (filteredMain.length === 0 && filteredOp.length === 0) {
-      const empty = el("div", ["task-empty"]);
-      empty.textContent = isCompletedTab ? "\uC644\uB8CC\uB41C Task\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4." : "Task\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4. Task \uCD94\uAC00 \uBC84\uD2BC\uC73C\uB85C \uC2DC\uC791\uD558\uC138\uC694.";
-      this.root.append(empty);
-      return;
-    }
-    const tableWrap = el("div", ["task-table-wrap"]);
-    const table = el("table", ["task-table"]);
-    table.setAttribute("role", "table");
-    const thead = el("thead");
-    const headRow = el("tr");
-    ["", "EM", "\uC21C\uC11C", "SUB-TASK", "\uC2DC\uC791\uC77C", "\uAE30\uD55C", "TASK", "\uB2EC\uC131\uB3C4", "KR no.", "KR", "\uBA54\uBAA8", ""].forEach((col) => {
-      const th = el("th");
-      th.textContent = col;
-      headRow.append(th);
-    });
-    thead.append(headRow);
-    table.append(thead);
-    const tbody = el("tbody");
-    const renderedTasks = /* @__PURE__ */ new Set();
-    const renderSection = (tasks) => {
-      const rows = [];
-      const taskOrder = /* @__PURE__ */ new Map();
-      tasks.forEach((t, i) => taskOrder.set(t.id, i));
-      for (const task of tasks) {
-        const kr = task.krId !== null ? state.keyResults[task.krId] : void 0;
-        const stList = task.subTasks.map((id) => state.subTasks[id]).filter((s) => s !== void 0).sort((a, b) => a.order - b.order);
-        const total = stList.length;
-        const done = stList.filter((s) => s.isCompleted).length;
-        const taskProgress = total === 0 ? 0 : Math.round(done / total * 100);
-        for (const st of stList) {
-          rows.push({ st, task, kr, taskProgress });
-        }
-      }
-      rows.sort((a, b) => {
-        const taskIdx = (taskOrder.get(a.task.id) ?? 0) - (taskOrder.get(b.task.id) ?? 0);
-        if (taskIdx !== 0) return taskIdx;
-        if (a.st.emQuadrant !== b.st.emQuadrant) return a.st.emQuadrant - b.st.emQuadrant;
-        return a.st.order - b.st.order;
-      });
-      for (const row of rows) {
-        if (!renderedTasks.has(row.task.id)) {
-          renderedTasks.add(row.task.id);
-          tbody.append(this._createTaskGroupRow(row.task, state, isCompletedTab));
-        }
-        tbody.append(this._createSubTaskRow(row.st, row.task, row.kr, row.taskProgress, state));
-      }
-      for (const task of tasks) {
-        if (renderedTasks.has(task.id)) continue;
-        tbody.append(this._createTaskGroupRow(task, state, isCompletedTab));
-      }
-    };
-    renderSection(filteredMain);
-    if (filteredOp.length > 0) {
-      tbody.append(this._createOperationalSeparatorRow(filteredOp.length));
-      renderSection(filteredOp);
-    }
-    table.append(tbody);
-    tableWrap.append(table);
-    this.root.append(tableWrap);
-  }
-  // ── Private: 서브태스크 행 생성 ──
-  _createSubTaskRow(st, task, kr, taskProgress, state) {
-    const isHighlight = this.highlightKRId !== null && task.krId === this.highlightKRId;
-    const isDimmed = this.highlightKRId !== null && task.krId !== this.highlightKRId;
-    const trCls = ["task-row", isHighlight ? "row-highlight" : "", isDimmed ? "row-dimmed" : ""].filter(Boolean);
-    const tr = el("tr", trCls);
-    tr.setAttribute("data-st-id", st.id);
-    tr.setAttribute("data-kr-id", task.krId ?? "");
-    const tdHandle = el("td", ["drag-handle"]);
-    tdHandle.setAttribute("draggable", "true");
-    tdHandle.textContent = "\u283F";
-    tdHandle.addEventListener("dragstart", (e) => {
-      e.stopPropagation();
-      this.stDrag = { stId: st.id, taskId: task.id };
-      tr.classList.add("dragging");
-      if (e.dataTransfer) {
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", st.id);
-      }
-    });
-    tdHandle.addEventListener("dragend", () => {
-      tr.classList.remove("dragging");
-      this.stDrag = null;
-      this.root.querySelectorAll(".drop-above, .drop-below").forEach((e) => {
-        e.classList.remove("drop-above", "drop-below");
-      });
-    });
-    tr.addEventListener("dragover", (e) => {
-      if (!this.stDrag || this.stDrag.taskId !== task.id || this.stDrag.stId === st.id) return;
-      e.preventDefault();
-      const rect = tr.getBoundingClientRect();
-      tr.classList.toggle("drop-above", e.clientY <= rect.top + rect.height / 2);
-      tr.classList.toggle("drop-below", e.clientY > rect.top + rect.height / 2);
-    });
-    tr.addEventListener("dragleave", () => {
-      tr.classList.remove("drop-above", "drop-below");
-    });
-    tr.addEventListener("drop", (e) => {
-      e.preventDefault();
-      if (!this.stDrag || this.stDrag.taskId !== task.id || this.stDrag.stId === st.id) return;
-      const rect = tr.getBoundingClientRect();
-      const insertBefore = e.clientY <= rect.top + rect.height / 2;
-      const stList = task.subTasks.map((id) => state.subTasks[id]).filter((s) => s !== void 0).sort((a, b) => a.order - b.order);
-      const ids = stList.map((s) => s.id);
-      const fromIdx = ids.indexOf(this.stDrag.stId);
-      ids.splice(fromIdx, 1);
-      const toIdx = ids.indexOf(st.id);
-      ids.splice(insertBefore ? toIdx : toIdx + 1, 0, this.stDrag.stId);
-      tr.classList.remove("drop-above", "drop-below");
-      this.events.onReorder(task.id, ids);
-    });
-    const tdEM = el("td", ["td-em"]);
-    const emBadge = el("span", ["em-badge", `em-q${st.emQuadrant}`]);
-    emBadge.textContent = String(st.emQuadrant);
-    emBadge.setAttribute("title", EM_LABELS[st.emQuadrant]);
-    tdEM.append(emBadge);
-    const tdOrder = el("td", ["td-order"]);
-    tdOrder.textContent = String(st.order + 1);
-    const tdST = el("td", ["td-subtask", st.isCompleted ? "st-done" : ""]);
-    const checkbox = el("input", ["st-checkbox"], { type: "checkbox" });
-    checkbox.checked = st.isCompleted;
-    checkbox.addEventListener("change", () => this.events.onToggleSubTask(st.id));
-    const stTitle = el("span", ["st-title"]);
-    stTitle.textContent = st.title;
-    tdST.append(checkbox, stTitle);
-    const tdStart = el("td", ["td-date"]);
-    tdStart.textContent = fmt(st.startDate);
-    const tdDue = el("td", ["td-date", this._isOverdue(st.dueDate, st.isCompleted) ? "td-overdue" : ""]);
-    tdDue.textContent = fmt(st.dueDate);
-    const tdTask = el("td", ["td-task"]);
-    tdTask.textContent = task.title;
-    const tdProgress = el("td", ["td-progress"]);
-    const pWrap = el("div", ["mini-progress-wrap"]);
-    const pBar = el("div", ["mini-progress-bar"]);
-    const pFill = el("div", ["mini-progress-fill"]);
-    pFill.style.width = `${taskProgress}%`;
-    pBar.append(pFill);
-    const pLabel = el("span", ["mini-progress-label"]);
-    pLabel.textContent = `${taskProgress}%`;
-    pWrap.append(pBar, pLabel);
-    tdProgress.append(pWrap);
-    const tdKRNo = el("td", ["td-kr-no"]);
-    if (kr) {
-      const badge = el("span", ["kr-badge"]);
-      badge.textContent = String(kr.krNo);
-      tdKRNo.append(badge);
-    }
-    const tdKR = el("td", ["td-kr"]);
-    tdKR.textContent = kr?.title ?? "";
-    const tdMemo = el("td", ["td-memo"]);
-    tdMemo.textContent = task.memo;
-    const tdAct = el("td", ["td-actions"]);
-    const editBtn = el("button", ["btn-icon-sm"], { title: "\uD3B8\uC9D1" });
-    editBtn.textContent = "\u270F\uFE0F";
-    editBtn.addEventListener("click", () => this.events.onEditSubTask(st.id));
-    const delBtn = el("button", ["btn-icon-sm", "btn-danger-sm"], { title: "\uC0AD\uC81C" });
-    delBtn.textContent = "\u{1F5D1}\uFE0F";
-    delBtn.addEventListener("click", () => this.events.onDeleteSubTask(st.id));
-    tdAct.append(editBtn, delBtn);
-    tr.append(tdHandle, tdEM, tdOrder, tdST, tdStart, tdDue, tdTask, tdProgress, tdKRNo, tdKR, tdMemo, tdAct);
-    return tr;
-  }
-  // ── Private: 운영업무 구분선 행 ──
-  _createOperationalSeparatorRow(count) {
-    const row = el("tr", ["operational-section-divider"]);
-    const td = el("td", [], { colspan: "12" });
-    const inner = el("div", ["operational-section-title"]);
-    inner.textContent = `\u2699 \uC6B4\uC601 \uC5C5\uBB34 (${count})`;
-    td.append(inner);
-    row.append(td);
-    return row;
-  }
-  // ── Private: Task 그룹 행 ──
-  _createTaskGroupRow(task, state, isCompletedTab = false) {
-    const extraCls = task.isOperational ? "operational-task-row" : "";
-    const completedCls = isCompletedTab ? "task-completed-row" : "";
-    const groupRow = el("tr", ["task-group-row", extraCls, completedCls].filter(Boolean));
-    groupRow.setAttribute("data-task-id", task.id);
-    groupRow.setAttribute("data-kr-id", task.krId ?? "");
-    const tdHandle = el("td", ["task-drag-handle"]);
-    if (!isCompletedTab && !task.isOperational) {
-      tdHandle.setAttribute("draggable", "true");
-      tdHandle.textContent = "\u283F";
-      tdHandle.addEventListener("dragstart", (e) => {
-        e.stopPropagation();
-        this.taskDrag = { taskId: task.id, krId: task.krId };
-        groupRow.classList.add("dragging");
-        if (e.dataTransfer) {
-          e.dataTransfer.effectAllowed = "move";
-          e.dataTransfer.setData("text/plain", task.id);
-        }
-      });
-      tdHandle.addEventListener("dragend", () => {
-        groupRow.classList.remove("dragging");
-        this.taskDrag = null;
-        this.root.querySelectorAll(".drop-above, .drop-below").forEach((e) => {
-          e.classList.remove("drop-above", "drop-below");
-        });
-      });
-      groupRow.addEventListener("dragover", (e) => {
-        if (!this.taskDrag || this.taskDrag.taskId === task.id) return;
-        e.preventDefault();
-        const rect = groupRow.getBoundingClientRect();
-        groupRow.classList.toggle("drop-above", e.clientY <= rect.top + rect.height / 2);
-        groupRow.classList.toggle("drop-below", e.clientY > rect.top + rect.height / 2);
-      });
-      groupRow.addEventListener("dragleave", () => {
-        groupRow.classList.remove("drop-above", "drop-below");
-      });
-      groupRow.addEventListener("drop", (e) => {
-        e.preventDefault();
-        if (!this.taskDrag || this.taskDrag.taskId === task.id) return;
-        const rect = groupRow.getBoundingClientRect();
-        const insertBefore = e.clientY <= rect.top + rect.height / 2;
-        groupRow.classList.remove("drop-above", "drop-below");
-        const currentOrder = buildTaskDisplayOrder(state);
-        const newOrder = computeTaskOrder(currentOrder, this.taskDrag.taskId, task.id, insertBefore);
-        if (newOrder) this.events.onReorderTaskDisplay(newOrder);
-      });
-    }
-    const tdGroup = el("td", ["task-group-cell"]);
-    tdGroup.setAttribute("colspan", "11");
-    const groupInner = el("div", ["task-group-inner"]);
-    const titleSpan = el("span", ["task-group-title"]);
-    titleSpan.textContent = task.title;
-    if (isCompletedTab) {
-      const completedBadge = el("span", ["task-completed-badge"]);
-      completedBadge.textContent = "\u2713 \uC644\uB8CC";
-      const revertBtn = el("button", ["btn-xs", "task-revert-btn"], { title: "\uC9C4\uD589\uC911\uC73C\uB85C \uB418\uB3CC\uB9AC\uAE30" });
-      revertBtn.textContent = "\u21A9 \uB418\uB3CC\uB9AC\uAE30";
-      revertBtn.addEventListener("click", () => this.events.onRevertTask(task.id));
-      const editTaskBtn = el("button", ["btn-icon-sm"], { title: "Task \uD3B8\uC9D1" });
-      editTaskBtn.textContent = "\u270F\uFE0F";
-      editTaskBtn.addEventListener("click", () => this.events.onEditTask(task.id));
-      const delTaskBtn = el("button", ["btn-icon-sm", "btn-danger-sm"], { title: "Task \uC0AD\uC81C" });
-      delTaskBtn.textContent = "\u{1F5D1}\uFE0F";
-      delTaskBtn.addEventListener("click", () => this.events.onDeleteTask(task.id));
-      groupInner.append(titleSpan, completedBadge, revertBtn, editTaskBtn, delTaskBtn);
-    } else {
-      if (task.isOperational) {
-        const opBadge = el("span", ["operational-task-badge"]);
-        opBadge.textContent = "\u2699 \uC6B4\uC601";
-        groupInner.append(titleSpan, opBadge);
-      } else {
-        groupInner.append(titleSpan);
-      }
-      const addStBtn = el("button", ["btn-xs", "btn-ghost-sm"], { title: "\uC11C\uBE0C\uD0DC\uC2A4\uD06C \uCD94\uAC00" });
-      addStBtn.textContent = "+ \uC11C\uBE0C\uD0DC\uC2A4\uD06C";
-      addStBtn.addEventListener("click", () => this.events.onAddSubTask(task.id));
-      const editTaskBtn = el("button", ["btn-icon-sm"], { title: "Task \uD3B8\uC9D1" });
-      editTaskBtn.textContent = "\u270F\uFE0F";
-      editTaskBtn.addEventListener("click", () => this.events.onEditTask(task.id));
-      const delTaskBtn = el("button", ["btn-icon-sm", "btn-danger-sm"], { title: "Task \uC0AD\uC81C" });
-      delTaskBtn.textContent = "\u{1F5D1}\uFE0F";
-      delTaskBtn.addEventListener("click", () => this.events.onDeleteTask(task.id));
-      groupInner.append(addStBtn, editTaskBtn, delTaskBtn);
-    }
-    tdGroup.append(groupInner);
-    groupRow.append(tdHandle, tdGroup);
-    return groupRow;
-  }
-  _isOverdue(dueDate, isCompleted) {
-    if (!dueDate || isCompleted) return false;
-    return new Date(dueDate) < new Date((/* @__PURE__ */ new Date()).toDateString());
-  }
-};
 
-// src/views/ModalView.ts
-var ModalView = class {
-  constructor(events) {
-    this.events = events;
-    this.overlay = el("div", ["modal-overlay"], { role: "dialog", "aria-modal": "true" });
-    this.overlay.style.display = "none";
-    this.dialog = el("div", ["modal-dialog"]);
-    this.overlay.append(this.dialog);
-    document.body.append(this.overlay);
-    this.overlay.addEventListener("click", (e) => {
-      if (e.target === this.overlay) this.close();
-    });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") this.close();
-    });
-  }
-  open(mode, state) {
-    clearEl(this.dialog);
-    this.overlay.style.display = "flex";
-    const closeBtn = el("button", ["modal-close-btn"], { "aria-label": "\uB2EB\uAE30" });
-    closeBtn.textContent = "\xD7";
-    closeBtn.addEventListener("click", () => this.close());
-    this.dialog.append(closeBtn);
-    switch (mode.type) {
-      case "edit-objective":
-        this._buildObjectiveForm(state);
-        break;
-      case "add-kr":
-        this._buildKRForm(null, state);
-        break;
-      case "edit-kr":
-        this._buildKRForm(mode.krId, state);
-        break;
-      case "add-task":
-        this._buildTaskForm(null, mode.krId, state);
-        break;
-      case "edit-task":
-        this._buildTaskForm(mode.taskId, null, state);
-        break;
-      case "add-subtask":
-        this._buildSubTaskForm(null, mode.taskId, state);
-        break;
-      case "edit-subtask":
-        this._buildSubTaskForm(mode.subTaskId, null, state);
-        break;
-      case "import-okr":
-        this._buildImportOKRForm(state);
-        break;
-    }
-    this.dialog.querySelector("input,textarea,select")?.focus();
-  }
-  close() {
-    this.overlay.style.display = "none";
-    clearEl(this.dialog);
-  }
-  _buildObjectiveForm(state) {
-    const title = el("h3", ["modal-title"]);
-    title.textContent = "Objective \uC124\uC815";
-    const form = el("form", ["modal-form"]);
-    const g = el("div", ["form-group"]);
-    const lbl = el("label", ["form-label"]);
-    lbl.textContent = "\uBAA9\uD45C (Objective)";
-    const ta = el("textarea", ["form-control"], { name: "objective", rows: "3" });
-    ta.value = state.okr?.objective ?? "";
-    g.append(lbl, ta);
-    const btn = el("button", ["btn", "btn-primary", "btn-block"], { type: "submit" });
-    btn.textContent = "\uC800\uC7A5";
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const val = ta.value.trim();
-      if (!val) return;
-      this.events.onSetObjective(val);
-      this.close();
-    });
-    form.append(g, btn);
-    this.dialog.append(title, form);
-  }
-  _buildKRForm(krId, state) {
-    const kr = krId ? state.keyResults[krId] : null;
-    const title = el("h3", ["modal-title"]);
-    title.textContent = kr ? "KR \uD3B8\uC9D1" : "KR \uCD94\uAC00";
-    const form = el("form", ["modal-form"]);
-    const g = el("div", ["form-group"]);
-    const lbl = el("label", ["form-label"]);
-    lbl.textContent = "Key Result";
-    const inp = el("input", ["form-control"], { type: "text", name: "title", placeholder: "KR\uC744 \uC785\uB825\uD558\uC138\uC694" });
-    inp.value = kr?.title ?? "";
-    g.append(lbl, inp);
-    const btn = el("button", ["btn", "btn-primary", "btn-block"], { type: "submit" });
-    btn.textContent = "\uC800\uC7A5";
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const val = inp.value.trim();
-      if (!val) return;
-      if (kr) {
-        this.events.onEditKR(kr.id, val);
-      } else {
-        this.events.onAddKR({ title: val });
-      }
-      this.close();
-    });
-    form.append(g, btn);
-    this.dialog.append(title, form);
-  }
-  _buildTaskForm(taskId, defaultKrId, state) {
-    const task = taskId ? state.tasks[taskId] : null;
-    const isEdit = task !== null;
-    const titleEl = el("h3", ["modal-title"]);
-    titleEl.textContent = isEdit ? "Task \uD3B8\uC9D1" : "Task \uCD94\uAC00";
-    const form = el("form", ["modal-form"]);
-    const isOperationalInit = task?.isOperational ?? false;
-    const opGroup = el("div", ["form-group", "operational-field"]);
-    const opLabel = el("label", ["operational-label"]);
-    const opCheckbox = el("input", ["operational-checkbox"], {
-      type: "checkbox",
-      name: "isOperational",
-      id: "modal-isOperational"
-    });
-    opCheckbox.checked = isOperationalInit;
-    const opText = el("span", ["checkbox-text"]);
-    const opTitle = el("span", ["checkbox-title"]);
-    opTitle.textContent = "\uC6B4\uC601 \uC5C5\uBB34";
-    const opDesc = el("span", ["checkbox-desc"]);
-    opDesc.textContent = "KR\uACFC \uC5F0\uACB0\uD558\uC9C0 \uC54A\uB294 \uB3C5\uB9BD \uC5C5\uBB34";
-    opText.append(opTitle, opDesc);
-    opLabel.append(opCheckbox, opText);
-    opGroup.append(opLabel);
-    form.append(opGroup);
-    const krGroup = el("div", ["form-group", "kr-select-field", isOperationalInit ? "disabled" : ""]);
-    const krLbl = el("label", ["form-label"]);
-    krLbl.textContent = "KR \uC5F0\uACB0";
-    const krSel = el("select", ["form-control"], { name: "krId" });
-    krSel.disabled = isOperationalInit;
-    if (!isOperationalInit) krSel.setAttribute("required", "required");
-    const phOpt = el("option", [], { value: "" });
-    phOpt.textContent = isOperationalInit ? "\uC6B4\uC601 \uC5C5\uBB34\uB294 KR\uC774 \uD544\uC694 \uC5C6\uC2B5\uB2C8\uB2E4" : "KR \uC120\uD0DD...";
-    krSel.append(phOpt);
-    const okr = state.okr;
-    if (okr) {
-      for (const id of okr.keyResults) {
-        const kr = state.keyResults[id];
-        if (!kr) continue;
-        const opt = el("option", [], { value: kr.id });
-        opt.textContent = `KR ${kr.krNo}: ${kr.title}`;
-        const preselect = isEdit ? task?.krId : defaultKrId;
-        if (id === preselect) opt.selected = true;
-        krSel.append(opt);
-      }
-    }
-    krGroup.append(krLbl, krSel);
-    form.append(krGroup);
-    opCheckbox.addEventListener("change", () => {
-      const checked = opCheckbox.checked;
-      krSel.disabled = checked;
-      if (checked) {
-        krGroup.classList.add("disabled");
-        krSel.value = "";
-        krSel.removeAttribute("required");
-        phOpt.textContent = "\uC6B4\uC601 \uC5C5\uBB34\uB294 KR\uC774 \uD544\uC694 \uC5C6\uC2B5\uB2C8\uB2E4";
-      } else {
-        krGroup.classList.remove("disabled");
-        krSel.setAttribute("required", "required");
-        phOpt.textContent = "KR \uC120\uD0DD...";
-      }
-    });
-    const g2 = el("div", ["form-group"]);
-    const lbl2 = el("label", ["form-label"]);
-    lbl2.textContent = "Task \uC81C\uBAA9";
-    const inp = el("input", ["form-control"], { type: "text", name: "title", placeholder: "Task \uC81C\uBAA9", required: "required" });
-    inp.value = task?.title ?? "";
-    g2.append(lbl2, inp);
-    const g3 = el("div", ["form-group"]);
-    const lbl3 = el("label", ["form-label"]);
-    lbl3.textContent = "\uBA54\uBAA8";
-    const ta = el("textarea", ["form-control"], { name: "memo", rows: "2", placeholder: "\uBA54\uBAA8 (\uC120\uD0DD)" });
-    ta.value = task?.memo ?? "";
-    g3.append(lbl3, ta);
-    const btn = el("button", ["btn", "btn-primary", "btn-block"], { type: "submit" });
-    btn.textContent = "\uC800\uC7A5";
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const titleVal = inp.value.trim();
-      const memoVal = ta.value;
-      if (!titleVal) return;
-      const opChecked = opCheckbox.checked;
-      const selectedKrId = opChecked ? null : krSel.value || null;
-      if (!opChecked && !selectedKrId) return;
-      if (isEdit && task) {
-        this.events.onEditTask(task.id, titleVal, memoVal, opChecked, selectedKrId);
-      } else {
-        this.events.onAddTask({
-          krId: selectedKrId,
-          title: titleVal,
-          memo: memoVal,
-          isOperational: opChecked
-        });
-      }
-      this.close();
-    });
-    form.append(g2, g3, btn);
-    this.dialog.append(titleEl, form);
-  }
-  _buildSubTaskForm(stId, taskId, state) {
-    const st = stId ? state.subTasks[stId] : null;
-    const isEdit = st !== null;
-    const titleEl = el("h3", ["modal-title"]);
-    titleEl.textContent = isEdit ? "\uC11C\uBE0C\uD0DC\uC2A4\uD06C \uD3B8\uC9D1" : "\uC11C\uBE0C\uD0DC\uC2A4\uD06C \uCD94\uAC00";
-    const form = el("form", ["modal-form"]);
-    const g1 = el("div", ["form-group"]);
-    const l1 = el("label", ["form-label"]);
-    l1.textContent = "\uC11C\uBE0C\uD0DC\uC2A4\uD06C \uC81C\uBAA9";
-    const inp = el("input", ["form-control"], { type: "text", name: "title", placeholder: "\uC11C\uBE0C\uD0DC\uC2A4\uD06C\uBA85" });
-    inp.value = st?.title ?? "";
-    g1.append(l1, inp);
-    const g2 = el("div", ["form-group"]);
-    const l2 = el("label", ["form-label"]);
-    l2.textContent = "EM \uC0AC\uBD84\uBA74";
-    const sel = el("select", ["form-control"], { name: "em" });
-    [1, 2, 3, 4].forEach((q) => {
-      const opt = el("option", [], { value: String(q) });
-      opt.textContent = `${q}: ${EM_LABELS[q]}`;
-      if (q === (st?.emQuadrant ?? 2)) opt.selected = true;
-      sel.append(opt);
-    });
-    g2.append(l2, sel);
-    const g3 = el("div", ["form-group"]);
-    const l3 = el("label", ["form-label"]);
-    l3.textContent = "\uC2DC\uC791\uC77C";
-    const startInp = el("input", ["form-control"], { type: "date", name: "startDate" });
-    startInp.value = st?.startDate ?? todayISO();
-    g3.append(l3, startInp);
-    const g4 = el("div", ["form-group"]);
-    const l4 = el("label", ["form-label"]);
-    l4.textContent = "\uAE30\uD55C";
-    const dueInp = el("input", ["form-control"], { type: "date", name: "dueDate" });
-    dueInp.value = st?.dueDate ?? "";
-    g4.append(l4, dueInp);
-    const btn = el("button", ["btn", "btn-primary", "btn-block"], { type: "submit" });
-    btn.textContent = "\uC800\uC7A5";
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const titleVal = inp.value.trim();
-      if (!titleVal) return;
-      const emVal = Number(sel.value);
-      const startDate = startInp.value;
-      const dueDate = dueInp.value;
-      if (isEdit && st) {
-        this.events.onEditSubTask(st.id, { title: titleVal, emQuadrant: emVal, startDate, dueDate });
-      } else {
-        const tid = taskId ?? "";
-        if (!tid) return;
-        this.events.onAddSubTask({ taskId: tid, title: titleVal, emQuadrant: emVal, startDate, dueDate });
-      }
-      this.close();
-    });
-    form.append(g1, g2, g3, g4, btn);
-    this.dialog.append(titleEl, form);
-  }
-  _buildImportOKRForm(state) {
-    const titleEl = el("h3", ["modal-title"]);
-    titleEl.textContent = "OKR 가져오기";
-    this.dialog.append(titleEl);
-    const desc = el("p");
-    desc.textContent = "다른 팀원의 KR을 선택해 복사합니다 (연결된 Task·서브태스크 포함).";
-    desc.style.cssText = "font-size:12px;color:var(--text-2);margin:0 0 14px;";
-    this.dialog.append(desc);
-    const members = this.events.onListOtherMembers();
-    if (!members || members.length === 0) {
-      const empty = el("div");
-      empty.textContent = "가져올 수 있는 다른 팀원이 없습니다.";
-      empty.style.cssText = "padding:20px;text-align:center;color:var(--text-2);font-size:13px;";
-      this.dialog.append(empty);
-      return;
-    }
-    const userGroup = el("div", ["form-group"]);
-    const userLabel = el("label", ["form-label"]);
-    userLabel.textContent = "팀원 선택";
-    const userSel = el("select", ["form-control"], { name: "fromUser" });
-    const ph = el("option", [], { value: "" });
-    ph.textContent = "— 팀원을 선택하세요 —";
-    userSel.append(ph);
-    for (const m of members) {
-      const o = el("option", [], { value: m });
-      o.textContent = m;
-      userSel.append(o);
-    }
-    userGroup.append(userLabel, userSel);
-    this.dialog.append(userGroup);
-    const krGroup = el("div", ["form-group"]);
-    krGroup.style.display = "none";
-    const krLabel = el("label", ["form-label"]);
-    krLabel.textContent = "복사할 KR 선택 (다중 선택 가능)";
-    const krList = el("div", ["import-kr-list"]);
-    krGroup.append(krLabel, krList);
-    this.dialog.append(krGroup);
-    const submitBtn = el("button", ["btn", "btn-primary", "btn-block"], { type: "button" });
-    submitBtn.textContent = "선택한 KR 복사";
-    submitBtn.disabled = true;
-    submitBtn.style.marginTop = "8px";
-    this.dialog.append(submitBtn);
-    const refreshSubmitState = () => {
-      const any = krList.querySelectorAll('input[type="checkbox"]:checked').length > 0;
-      submitBtn.disabled = !any;
-    };
-    userSel.addEventListener("change", () => {
-      const u = userSel.value;
-      clearEl(krList);
-      submitBtn.disabled = true;
-      if (!u) {
-        krGroup.style.display = "none";
-        return;
-      }
-      const krs = this.events.onListUserKRs(u);
-      if (!krs || krs.length === 0) {
-        const empty = el("div");
-        empty.textContent = "해당 팀원의 KR이 없습니다.";
-        empty.style.cssText = "padding:16px;text-align:center;color:var(--text-2);font-size:12px;";
-        krList.append(empty);
-        krGroup.style.display = "";
-        return;
-      }
-      for (const kr of krs) {
-        const row = el("label", ["import-kr-row"]);
-        const cb = el("input", [], { type: "checkbox", value: kr.id });
-        const span = el("span");
-        span.textContent = `KR${kr.krNo}. ${kr.title}`;
-        const meta = el("span", ["kr-meta"]);
-        meta.textContent = ` (Task ${kr.taskCount}개, 진행률 ${kr.progress}%)`;
-        span.append(meta);
-        row.append(cb, span);
-        krList.append(row);
-        cb.addEventListener("change", refreshSubmitState);
-      }
-      krGroup.style.display = "";
-    });
-    submitBtn.addEventListener("click", () => {
-      const u = userSel.value;
-      const krIds = Array.from(krList.querySelectorAll('input[type="checkbox"]:checked')).map((cb) => cb.value);
-      if (!u || krIds.length === 0) return;
-      this.events.onImportKRs(u, krIds);
-      this.close();
-    });
-  }
-};
-
-// src/views/ToastView.ts
-var ToastView = class {
-  constructor() {
-    this.container = el("div", ["toast-container"], { "aria-live": "polite", "aria-atomic": "false" });
-    document.body.append(this.container);
-  }
-  show(msg, type = "info", ms = 3e3) {
-    const id = uid("toast");
-    const toast = el("div", ["toast", `toast-${type}`], { id, role: "alert" });
-    toast.textContent = msg;
-    this.container.append(toast);
-    requestAnimationFrame(() => toast.classList.add("toast-in"));
-    setTimeout(() => {
-      toast.classList.remove("toast-in");
-      toast.classList.add("toast-out");
-      toast.addEventListener("transitionend", () => toast.remove(), { once: true });
-    }, ms);
-  }
-  success(msg) {
-    this.show(msg, "success");
-  }
-  error(msg) {
-    this.show(msg, "error", 5e3);
-  }
-  info(msg) {
-    this.show(msg, "info");
-  }
-};
-
-// src/app.ts
-var App = class {
-  constructor() {
-    this.saveStatusEl = null;
-    this.store = new Store();
-    const okrRoot = qs("#okr-section");
-    const taskRoot = qs("#task-section");
-    this.okrSection = new OKRSection(okrRoot, {
-      onEditObjective: () => this.openModal({ type: "edit-objective" }),
-      onAddKR: () => this.openModal({ type: "add-kr" }),
-      onEditKR: (krId) => this.openModal({ type: "edit-kr", krId }),
-      onDeleteKR: (krId) => {
-        if (!confirm("KR\uACFC \uC5F0\uACB0\uB41C Task/\uC11C\uBE0C\uD0DC\uC2A4\uD06C\uAC00 \uBAA8\uB450 \uC0AD\uC81C\uB429\uB2C8\uB2E4.")) return;
-        this.store.deleteKR(krId);
-        this.toast.info("KR\uC774 \uC0AD\uC81C\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
-      },
-      onKRClick: (krId) => {
-        this.okrSection.setActiveKR(krId);
-        this.taskSection.setHighlightKR(krId);
-      },
-      onReorderKRs: (orderedIds) => {
-        this.store.reorderKRs(orderedIds);
-      }
-    });
-    this.taskSection = new TaskSection(taskRoot, {
-      onAddTask: () => this.openModal({ type: "add-task", krId: "" }),
-      onEditTask: (taskId) => this.openModal({ type: "edit-task", taskId }),
-      onDeleteTask: (taskId) => {
-        if (!confirm("Task\uC640 \uC11C\uBE0C\uD0DC\uC2A4\uD06C\uAC00 \uC0AD\uC81C\uB429\uB2C8\uB2E4.")) return;
-        this.store.deleteTask(taskId);
-        this.toast.info("Task\uAC00 \uC0AD\uC81C\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
-      },
-      onAddSubTask: (taskId) => this.openModal({ type: "add-subtask", taskId }),
-      onEditSubTask: (stId) => this.openModal({ type: "edit-subtask", subTaskId: stId }),
-      onDeleteSubTask: (stId) => {
-        this.store.deleteSubTask(stId);
-        this.toast.info("\uC11C\uBE0C\uD0DC\uC2A4\uD06C\uAC00 \uC0AD\uC81C\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
-      },
-      onToggleSubTask: (stId) => {
-        this.store.toggleSubTask(stId);
-      },
-      onReorder: (taskId, orderedIds) => {
-        this.store.reorderSubTasks(taskId, orderedIds);
-      },
-      onReorderTasks: (krId, orderedIds) => {
-        this.store.reorderTasks(krId, orderedIds);
-      },
-      onReorderTaskDisplay: (orderedIds) => {
-        this.store.reorderTaskDisplay(orderedIds);
-      },
-      // Phase 3: 탭 관련 이벤트
-      onTabChange: (tab) => {
-        this.store.setActiveTaskTab(tab);
-      },
-      isTaskCompleted: (task) => this.store.isTaskCompleted(task),
-      onTaskCompleted: (taskTitle, toCompleted) => {
-        if (toCompleted) {
-          this.toast.success(`'${taskTitle}' \uC644\uB8CC! \uC644\uB8CC \uD0ED\uC73C\uB85C \uC774\uB3D9\uB429\uB2C8\uB2E4.`);
-        } else {
-          this.toast.info(`'${taskTitle}' \uC9C4\uD589\uC911 \uD0ED\uC73C\uB85C \uC774\uB3D9\uB429\uB2C8\uB2E4.`);
-        }
-      },
-      onRevertTask: (taskId) => {
-        const { tasks, subTasks } = this.store.getState();
-        const task = tasks[taskId];
-        if (!task) return;
-        const firstCompleted = task.subTasks.find((stId) => subTasks[stId]?.isCompleted);
-        if (firstCompleted) {
-          this.store.toggleSubTask(firstCompleted);
-          this.toast.info("Task\uB97C \uC9C4\uD589\uC911\uC73C\uB85C \uB418\uB3CC\uB838\uC2B5\uB2C8\uB2E4.");
-        }
-      }
-    });
-    this.modal = new ModalView({
-      onSetObjective: (text) => {
-        if (this.store.hasAnyTeamObjective()) {
-          const ok = window.confirm("팀 내 OBJECTIVE는 모든 구성원이 동일하게 적용됩니다. 수정하시겠습니까?");
-          if (!ok) return;
-        }
-        this.store.setObjectiveForAll(text);
-        this.toast.success("Objective\uAC00 \uC800\uC7A5\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
-      },
-      onListOtherMembers: () => this.store.listOtherTeamMembers(),
-      onListUserKRs: (user) => {
-        const st = this.store.loadUserState(user);
-        if (!st.okr) return [];
-        return Object.values(st.keyResults).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((kr) => ({ id: kr.id, krNo: kr.krNo, title: kr.title, progress: kr.progress ?? 0, taskCount: (kr.tasks || []).length }));
-      },
-      onImportKRs: (fromUser, krIds) => {
-        try {
-          const result = this.store.importKRsFromUser(fromUser, krIds);
-          if (result.added > 0) this.toast.success(result.added + "개 KR을 가져왔습니다.");
-          else this.toast.error("가져올 KR이 없습니다.");
-        } catch (err) {
-          console.error("importKRs failed", err);
-          this.toast.error("KR 가져오기 실패");
-        }
-      },
-      onAddKR: (p) => {
-        if (!this.store.getState().okr) {
-          this.toast.error("\uBA3C\uC800 Objective\uB97C \uC124\uC815\uD574\uC8FC\uC138\uC694.");
-          return;
-        }
-        this.store.addKR(p);
-        this.toast.success("KR\uC774 \uCD94\uAC00\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
-      },
-      onEditKR: (krId, title) => {
-        this.store.updateKR(krId, { title });
-        this.toast.success("KR\uC774 \uC218\uC815\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
-      },
-      onAddTask: (p) => {
-        this.store.addTask(p);
-        this.toast.success("Task\uAC00 \uCD94\uAC00\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
-      },
-      onEditTask: (taskId, title, memo, isOperational, krId) => {
-        this.store.updateTask(taskId, { title, memo, isOperational, krId });
-        this.toast.success("Task\uAC00 \uC218\uC815\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
-      },
-      onAddSubTask: (p) => {
-        this.store.addSubTask(p);
-        this.toast.success("\uC11C\uBE0C\uD0DC\uC2A4\uD06C\uAC00 \uCD94\uAC00\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
-      },
-      onEditSubTask: (stId, p) => {
-        this.store.updateSubTask(stId, p);
-        this.toast.success("\uC11C\uBE0C\uD0DC\uC2A4\uD06C\uAC00 \uC218\uC815\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
-      }
-    });
-    this.toast = new ToastView();
-    try {
-      this.saveStatusEl = qs("#save-status");
-    } catch {
-    }
-    this.store.subscribe((state) => {
-      this.render(state);
-      this.flashSaved();
-    });
-    this.render(this.store.getState());
-    this.setupMessageListener();
-    const importBtn = document.getElementById("btn-import-okr");
-    if (importBtn) importBtn.addEventListener("click", () => this.openModal({ type: "import-okr" }));
-  }
-  setupMessageListener() {
-    window.addEventListener("message", (event) => {
-      const allowed = event.origin === "null" || event.origin === window.location.origin;
-      if (!allowed) return;
-      const msg = event.data;
-      if (!msg?.type) return;
-      if (msg.type === "GET_KRS") {
-        const krs = Object.values(this.store.getState().keyResults).sort((a, b) => a.order - b.order).map((kr) => ({ id: kr.id, krNo: kr.krNo, title: kr.title }));
-        event.source.postMessage(
-          { type: "KRS_RESULT", krs, user: getCurrentUser() },
-          "*"
-        );
-      }
-      if (msg.type === "OKR_TASK_UPDATED" && msg.taskId) {
-        this.store.syncSharedTask(msg.taskId);
-      }
-    });
-  }
-  openModal(mode) {
-    this.modal.open(mode, this.store.getState());
-  }
-  render(state) {
-    this.okrSection.render(state);
-    this.taskSection.render(state);
-  }
-  flashSaved() {
-    if (!this.saveStatusEl) return;
-    this.saveStatusEl.textContent = "\uC800\uC7A5 \uC644\uB8CC";
-    this.saveStatusEl.className = "save-status save-saved";
-  }
-};
-function boot() {
-  try {
-    new App();
-  } catch (err) {
-    console.error("[OKR-Matrix] Boot failed:", err);
-    const div = document.createElement("div");
-    div.style.cssText = "padding:2rem;color:#dc2626;font-family:sans-serif;font-size:1rem;";
-    div.textContent = `\uC571 \uCD08\uAE30\uD654 \uC624\uB958: ${String(err)}`;
-    document.body.prepend(div);
-  }
+function translateError(msg) {
+  if (msg.includes('Invalid login')) return '이메일 또는 비밀번호가 올바르지 않아요.';
+  if (msg.includes('already registered')) return '이미 가입된 이메일이에요. 로그인해주세요.';
+  if (msg.includes('Password should')) return '비밀번호는 6자 이상이어야 해요.';
+  return msg;
 }
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", boot);
-} else {
-  boot();
-}
-//# sourceMappingURL=bundle.js.map
 
-  </script>
+async function handleLogout() {
+  await sb.auth.signOut();
+  objectives = []; keyResults = []; tasks = [];
+  toast('로그아웃 되었어요.', 'info');
+}
+
+// ── 데이터 로드 ──
+async function loadAll() {
+  const [objRes, krRes, taskRes] = await Promise.all([
+    sb.from('objectives').select('*').order('created_at'),
+    sb.from('key_results').select('*').order('created_at'),
+    sb.from('tasks').select('*').order('created_at'),
+  ]);
+  objectives = objRes.data || [];
+  keyResults = krRes.data || [];
+  tasks = taskRes.data || [];
+  renderOKR();
+  renderTasks();
+}
+
+// ── 실시간 구독 ──
+function subscribeRealtime() {
+  sb.channel('okr-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'objectives' }, loadAll)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'key_results' }, loadAll)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, loadAll)
+    .subscribe();
+}
+
+// ── OKR 렌더 ──
+function renderOKR() {
+  const el = document.getElementById('okr-list');
+  if (!objectives.length) { el.innerHTML = '<div class="okr-empty">아직 Objective가 없어요. + Objective 버튼으로 추가하세요!</div>'; return; }
+  el.innerHTML = objectives.map(obj => {
+    const krs = keyResults.filter(k => k.objective_id === obj.id);
+    const krHTML = krs.length ? krs.map(kr => {
+      const pct = Math.min(100, Math.round((kr.current_value / (kr.target_value || 100)) * 100));
+      return `<div class="kr-item">
+        <span class="kr-title">${esc(kr.title)}</span>
+        <div class="kr-progress-wrap">
+          <div class="kr-progress-bar"><div class="kr-progress-fill" style="width:${pct}%"></div></div>
+          <span class="kr-pct">${pct}%</span>
+          <button class="btn-icon" onclick="updateKRProgress('${kr.id}','${kr.current_value}','${kr.target_value}')" title="진행률 수정">✏️</button>
+          <button class="btn-icon btn-danger-sm" onclick="deleteKR('${kr.id}')">🗑</button>
+        </div>
+      </div>`;
+    }).join('') : '<div style="font-size:12px;color:var(--text-3);padding:4px 0;">KR이 없어요</div>';
+    return `<div class="objective-card">
+      <div class="objective-icon">🎯</div>
+      <div class="objective-body">
+        <div class="objective-title">${esc(obj.title)}</div>
+        ${obj.description ? `<div style="font-size:12px;color:var(--text-2);margin-bottom:8px;">${esc(obj.description)}</div>` : ''}
+        <div class="kr-list">${krHTML}</div>
+      </div>
+      <div class="objective-actions">
+        <button class="btn-icon btn-danger-sm" onclick="deleteObjective('${obj.id}')" title="삭제">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Task 렌더 ──
+function renderTasks() {
+  ['q1','q2','q3','q4'].forEach(q => {
+    const el = document.getElementById(`${q}-items`);
+    let filtered = tasks.filter(t => t.eisenhower === q);
+    if (currentFilter === 'todo') filtered = filtered.filter(t => t.status !== 'done');
+    if (currentFilter === 'done') filtered = filtered.filter(t => t.status === 'done');
+    if (!filtered.length) { el.innerHTML = '<div class="task-empty">없음</div>'; return; }
+    el.innerHTML = filtered.map(t => {
+      const kr = keyResults.find(k => k.id === t.key_result_id);
+      const isDone = t.status === 'done';
+      return `<div class="task-item ${isDone ? 'done' : ''}">
+        <input type="checkbox" class="task-check" ${isDone ? 'checked' : ''} onchange="toggleTask('${t.id}',this.checked)" />
+        <div class="task-body">
+          <div class="task-title">${esc(t.title)}</div>
+          <div class="task-meta">
+            ${kr ? `<span class="task-tag tag-kr">🔗 ${esc(kr.title.substring(0,20))}</span>` : ''}
+            ${t.is_operational ? '<span class="task-tag tag-op">⚙️ 운영</span>' : ''}
+          </div>
+        </div>
+        <button class="btn-icon task-del btn-danger-sm" onclick="deleteTask('${t.id}')">🗑</button>
+      </div>`;
+    }).join('');
+  });
+  const total = tasks.length;
+  const done = tasks.filter(t => t.status === 'done').length;
+  document.getElementById('footer-count').textContent = `Task ${total}개 (완료 ${done}개)`;
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTasks();
+}
+
+// ── Objective 저장 ──
+async function saveObjective() {
+  const title = document.getElementById('okr-title-input').value.trim();
+  if (!title) { toast('목표를 입력해주세요.', 'error'); return; }
+  const desc = document.getElementById('okr-desc-input').value.trim();
+  const { data: obj, error } = await sb.from('objectives').insert({ title, description: desc, user_id: currentUser.id }).select().single();
+  if (error) { toast('저장 실패: ' + error.message, 'error'); return; }
+  const krInputs = document.querySelectorAll('.kr-input-field');
+  for (const inp of krInputs) {
+    const v = inp.value.trim();
+    if (v) await sb.from('key_results').insert({ title: v, objective_id: obj.id, user_id: currentUser.id });
+  }
+  closeModal('okr-modal');
+  toast('Objective 저장 완료! ✓', 'success');
+  await loadAll();
+}
+
+// ── KR 입력 필드 ──
+let krCount = 0;
+function addKRInput(val = '') {
+  krCount++;
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
+  div.innerHTML = `<input type="text" class="form-control kr-input-field" placeholder="KR ${krCount}: 예) 파일럿 프로젝트 3개 완료" value="${esc(val)}" style="flex:1;" />
+    <button class="btn-icon btn-danger-sm" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('kr-inputs').appendChild(div);
+}
+
+// ── KR 진행률 수정 ──
+async function updateKRProgress(id, current, target) {
+  const newVal = prompt(`현재 진행값을 입력하세요 (목표: ${target})`, current);
+  if (newVal === null) return;
+  const num = parseFloat(newVal);
+  if (isNaN(num)) { toast('숫자를 입력해주세요.', 'error'); return; }
+  await sb.from('key_results').update({ current_value: num }).eq('id', id);
+  toast('진행률 업데이트 완료! ✓', 'success');
+  await loadAll();
+}
+
+// ── KR 삭제 ──
+async function deleteKR(id) {
+  if (!confirm('이 KR을 삭제할까요? 연결된 Task도 함께 삭제됩니다.')) return;
+  await sb.from('key_results').delete().eq('id', id);
+  toast('KR 삭제 완료', 'info');
+  await loadAll();
+}
+
+// ── Objective 삭제 ──
+async function deleteObjective(id) {
+  if (!confirm('이 Objective와 모든 KR, Task를 삭제할까요?')) return;
+  await sb.from('objectives').delete().eq('id', id);
+  toast('Objective 삭제 완료', 'info');
+  await loadAll();
+}
+
+// ── Task 저장 ──
+async function saveTask() {
+  const title = document.getElementById('task-title-input').value.trim();
+  if (!title) { toast('Task 제목을 입력해주세요.', 'error'); return; }
+  const krId = document.getElementById('task-kr-select').value || null;
+  const em = document.getElementById('task-em-select').value;
+  const isOp = !krId;
+  const { error } = await sb.from('tasks').insert({
+    title, key_result_id: krId, eisenhower: em,
+    is_operational: isOp, user_id: currentUser.id, status: 'todo'
+  });
+  if (error) { toast('저장 실패: ' + error.message, 'error'); return; }
+  closeModal('task-modal');
+  toast('Task 저장 완료! ✓', 'success');
+  await loadAll();
+}
+
+// ── Task 완료 토글 ──
+async function toggleTask(id, checked) {
+  await sb.from('tasks').update({ status: checked ? 'done' : 'todo' }).eq('id', id);
+  await loadAll();
+}
+
+// ── Task 삭제 ──
+async function deleteTask(id) {
+  if (!confirm('이 Task를 삭제할까요?')) return;
+  await sb.from('tasks').delete().eq('id', id);
+  toast('Task 삭제 완료', 'info');
+  await loadAll();
+}
+
+// ── 모달 ──
+function openModal(id) {
+  if (id === 'okr-modal') {
+    document.getElementById('okr-title-input').value = '';
+    document.getElementById('okr-desc-input').value = '';
+    document.getElementById('kr-inputs').innerHTML = '';
+    krCount = 0;
+    addKRInput(); addKRInput();
+  }
+  if (id === 'task-modal') {
+    document.getElementById('task-title-input').value = '';
+    const sel = document.getElementById('task-kr-select');
+    sel.innerHTML = '<option value="">— KR 없음 (운영업무) —</option>';
+    keyResults.forEach(kr => {
+      const obj = objectives.find(o => o.id === kr.objective_id);
+      sel.innerHTML += `<option value="${kr.id}">[${obj ? esc(obj.title.substring(0,15)) : '?'}] ${esc(kr.title.substring(0,25))}</option>`;
+    });
+  }
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// ── Toast ──
+function toast(msg, type = 'info') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  requestAnimationFrame(() => { t.classList.add('toast-in'); });
+  setTimeout(() => { t.classList.remove('toast-in'); setTimeout(() => t.remove(), 200); }, 2800);
+}
+
+// ── 유틸 ──
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// 엔터키로 로그인
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('auth-screen').style.display !== 'none') handleAuth();
+});
+
+// 모달 바깥 클릭시 닫기
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+// 시작
+init();
+</script>
 </body>
 </html>
